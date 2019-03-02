@@ -184,16 +184,33 @@ collapse_text = ( list_of_texts ) ->
 @$collect = ( S, collector ) ->
   return $ ( d, send ) =>
     unless select d, '^definition'
-      throw new Error "µ23982 expected a definition datom, got #{rpr d}"
-    definition = d.value
-    if collector[ definition.name ]?
-      throw new Error "µ23983 duplicate name #{definition.name}: #{rpr definition}"
-    collector[ definition.name ] = definition
+      throw new Error "µ23982 expected a '^definition', got #{rpr d}"
+    #.......................................................................................................
+    lnr           = d.$.line
+    definition    = d.value
+    entry         = ( collector[ definition.name ] ?= { arity: {}, type: definition.type, } )
+    arity         = if definition.signature? then definition.signature.length else 'null'
+    { text
+      location
+      signature } = definition
+    #.......................................................................................................
+    unless d.value.type is entry.type
+      throw new Error "µ94432 expected type #{rpr entry.type}, got #{rpr definition.type} (##{lnr})"
+    #.......................................................................................................
+    if entry.arity[ arity ]?
+      throw new Error "µ23983 name #{definition.name} arity #{arity} already defined: #{rpr definition} (##{lnr})"
+    #.......................................................................................................
+    if arity is 'null' and ( Object.keys entry.arity ).length > 0
+      throw new Error "µ23983 can't overload definition with signature with signature-less definition: #{rpr definition} (##{lnr})"
+    #.......................................................................................................
+    entry.arity[ arity ]            = { text, location, }
+    entry.arity[ arity ].signature  = signature if signature?
+    #.......................................................................................................
     return null
 
 #-----------------------------------------------------------------------------------------------------------
-@read_definitions           = ( path ) -> await @_read_definitions PD.read_from_file    path
-@read_definitions_from_text = ( text ) -> await @_read_definitions PD.new_value_source  [ text, ]
+@read_definitions           = ( path ) -> await @_read_definitions PD.read_from_file path
+@read_definitions_from_text = ( text ) -> await @_read_definitions PD.new_value_source [ text, ]
 
 #-----------------------------------------------------------------------------------------------------------
 @_read_definitions = ( source ) ->
