@@ -7,7 +7,7 @@ is a tool that lets you collect named snippets of arbitrary code—e.g. SQL quer
 files. These snippets can then be retrieved and, for example, turned into functions that execute
 queries against a database.
 
-The format is whiutespace-sensitive and super-simple: Each line that does not start with whitespace and is
+The format is whitespace-sensitive and super-simple: Each line that does not start with whitespace and is
 not a top-level comment is considered an IC directive (or a syntax error in case it fails to parse). A
 directive consists of a type annotation (that can be freely chosen), a name (that may not contain whitespace
 or round brackets), an optional signature, and a source text. For example:
@@ -102,4 +102,13 @@ fetch_texnames:
       signature:    [ '$limit', ]
 ```
 
+Observe the following syntactical constraints:
 
+* When giving multiple definitions with the same name, each definition must have another arity (number of
+  formal arguments).
+
+* When giving multiple definitions with the same name, no definition may be given with no round brackets
+  (symbolized as arity `'null'`).
+
+* Each line in a block must start with the same whitespace characters (or else be blank); this indentation
+  will be subtracted from each line.
