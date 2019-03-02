@@ -225,9 +225,7 @@ collapse_text = ( list_of_texts ) ->
     pipeline.push @$add_headers           S
     pipeline.push @$add_regions           S
     pipeline.push @$skip_ignored          S
-    # pipeline.push PD.$watch ( d ) -> urge 'µ22822', d
     pipeline.push @$reorder_trailers      S
-    # pipeline.push PD.$watch ( d ) -> urge 'µ22822', d.key, rpr d.value
     pipeline.push @$compile_definitions   S
     pipeline.push @$collect               S, R
     pipeline.push PD.$drain -> resolve R
