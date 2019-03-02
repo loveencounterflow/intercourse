@@ -1,7 +1,5 @@
 
 
-
-
 # InterCourse
 
 InterCourse (IC) is YeSQL-like utlity to treat files as archives of hunks of functionality descriptions, IOW, it
@@ -17,19 +15,21 @@ or round brackets), an optional signature, and a source text. For example:
 ```sql
 
 -- ---------------------------------------------------------------------------------------------------------
+-- A block defined without brackets will result in a description without a `signature` member:
 procedure import_table_texnames:
   drop table if exists texnames;
   create virtual table texnames using csv( filename='texnames.csv' );
 
 -- ---------------------------------------------------------------------------------------------------------
-procedure create_snippet_table:
+-- A block defined with empty brackets will result in `{ signature: [], }`:
+procedure create_snippet_table():
   drop table if exists snippets;
   create table snippets (
       id      integer primary key,
       snippet text not null );
 
 -- ---------------------------------------------------------------------------------------------------------
-procedure populate_snippets:
+procedure populate_snippets():
   insert into snippets ( snippet ) values
     ( 'iota' ),
     ( 'Iota' ),
@@ -39,11 +39,67 @@ procedure populate_snippets:
     ( 'Beta' );
 
 -- ---------------------------------------------------------------------------------------------------------
--- one-liners and overloading is possible, too:
-query fetch_texnames(): 				select * from texnames;
+-- Here we define a `query` that needs exactly one parameter:
+query match_snippet( probe ):
+  select id, snippet from snippets where snippet like $probe
+
+-- ---------------------------------------------------------------------------------------------------------
+-- one-liners and overloading are possible, too:
+query fetch_texnames():         select * from texnames;
 query fetch_texnames( $limit ): select * from texnames limit $limit;
 
+-- ---------------------------------------------------------------------------------------------------------
+-- everything under an `ignore` heading will be ignored (duh):
 ignore:
-	This text will be ignored
+  This text will be ignored
 ```
+
+The above will be turned into a JS object (here shown using YAML / CoffeeScript notation):
+
+
+```coffee
+import_table_texnames:
+  type:   'procedure'
+  arity:
+    null:
+      text:         'drop table if exists texnames;\ncreate virtual table texnames using csv( filename='texnames.csv' );\n'
+      location:     { line_nr: 4, }
+
+create_snippet_table: {
+  type:   'procedure'
+  arity:
+    '0':
+      text:         'drop table if exists snippets;\ncreate table snippets (\n    id      integer primary key,\n    snippet text not null );\n'
+      location:     { line_nr: 10, }
+      signature:    []
+
+populate_snippets:
+  type:   'procedure'
+  arity:
+    '0':
+      text:         'insert into snippets ( snippet ) values\n  ( 'iota' ),\n  ( 'Iota' ),\n  ( 'alpha' ),\n  ( 'Alpha' ),\n  ( 'beta' ),\n  ( 'Beta' );\n'
+      location:     { line_nr: 17, }
+      signature:    []
+
+match_snippet:
+  type:   'query'
+  arity:
+    '1':
+      text:         'select id, snippet from snippets where snippet like $probe\n'
+      location:     { line_nr: 28, }
+      signature:    [ 'probe', ]
+
+fetch_texnames:
+  type:   'query'
+  arity:
+    '0':
+      text:         'select * from texnames;\n'
+      location:     { line_nr: 33, }
+      signature:    []
+    '1':
+      text:         'select * from texnames limit $limit;\n'
+      location:     { line_nr: 34, }
+      signature:    [ '$limit', ]
+```
+
 
