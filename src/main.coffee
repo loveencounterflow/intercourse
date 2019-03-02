@@ -21,6 +21,7 @@ PD                        = require 'pipedreams'
   select }                = PD
 { assign
   jr }                    = CND
+copy                      = ( x ) -> assign {}, x
 
 #-----------------------------------------------------------------------------------------------------------
 collapse_text = ( list_of_texts ) ->
@@ -28,7 +29,7 @@ collapse_text = ( list_of_texts ) ->
   R = R.join '\n'
   R = R.replace /^\s*/, ''
   R = R.replace /\s*$/, ''
-  R = R + '\n'
+  R = R + '\n' unless R.length is 0
   return R
 
 #-----------------------------------------------------------------------------------------------------------
@@ -46,17 +47,15 @@ collapse_text = ( list_of_texts ) ->
 
 #-----------------------------------------------------------------------------------------------------------
 @$add_headers = ( S ) ->
-  header_pattern = /// ^ (?<ictype> \S+ ) \s+ (?<icname> \S+ ) \s* : \s*  $ ///
-  ignore_pattern = /// ^ ignore \s* : \s*  $ ///
+  header_sig_re   = /// ^ (?<ictype> \S+ ) \s+ (?<icname> \S+? )(?<signature> \( .*? \) ) \s* : \s* (?<trailer> .*? ) \s* $ ///
+  header_plain_re = /// ^ (?<ictype> \S+ ) \s+ (?<icname> \S+  )                          \s* : \s* (?<trailer> .*? ) \s* $ ///
+  ignore_re       = /// ^ ignore \s* : \s*  $ ///
   return $ ( d, send ) =>
     return send d if d.is_blank
     return send d if ( d.value.match /^\s/ )?
-    #.......................................................................................................
-    if ( match = d.value.match ignore_pattern )?
-      return send PD.new_event '^ignore', match.groups, $: d
-    #.......................................................................................................
-    if ( match = d.value.match header_pattern )?
-      return send PD.new_event '^definition', match.groups, $: d
+    return send PD.new_event '^ignore',     ( copy m.groups ), $: d if ( m = d.value.match ignore_re       )?
+    return send PD.new_event '^definition', ( copy m.groups ), $: d if ( m = d.value.match header_sig_re   )?
+    return send PD.new_event '^definition', ( copy m.groups ), $: d if ( m = d.value.match header_plain_re )?
     #.......................................................................................................
     throw new Error "µ83473 illegal line #{rpr d}"
     return null
@@ -67,7 +66,7 @@ collapse_text = ( list_of_texts ) ->
   prv_name      = null
   last          = Symbol 'last'
   #.........................................................................................................
-  return $ ( d, send ) =>
+  return $ { last, }, ( d, send ) =>
     #.......................................................................................................
     if d is last
       if prv_name?
@@ -99,11 +98,38 @@ collapse_text = ( list_of_texts ) ->
 @$skip_ignored = ( S ) ->
   within_ignore = false
   return $ ( d, send ) =>
-    if select d, '<ignore'
-      within_ignore = true
-    else if select d, '>ignore'
-      within_ignore = false
-    else unless within_ignore
+    if      select d, '<ignore'   then within_ignore = true
+    else if select d, '>ignore'   then within_ignore = false
+    else unless within_ignore     then send d
+    #.......................................................................................................
+    return null
+
+#-----------------------------------------------------------------------------------------------------------
+@$reorder_trailers = ( S ) ->
+  within_definition = false
+  is_oneliner       = false
+  return $ ( d, send ) =>
+    #.......................................................................................................
+    if select d, '<definition'
+      within_definition = true
+      trailer           = d.value.trailer
+      delete d.value.trailer
+      if trailer? and ( trailer.length > 0 )
+        is_oneliner = true
+        send d
+        send PD.new_event '^line', '  ' + trailer.trim(), $: d
+      else
+        send d
+    #.......................................................................................................
+    else if select d, '>definition'
+      is_oneliner       = false
+      within_definition = false
+      send d
+    #.......................................................................................................
+    else if within_definition and is_oneliner and ( not select d, '>definition' )
+      throw new Error "µ87872 illegal follow-up after one-liner: #{rpr d}"
+    #.......................................................................................................
+    else
       send d
     #.......................................................................................................
     return null
@@ -119,7 +145,13 @@ collapse_text = ( list_of_texts ) ->
       name                = d.value.icname
       type                = d.value.ictype
       location            = d.$
+      signature           = null
       this_definition     = { name, type, text: [], location, }
+      if d.value.signature?
+        signature = []
+        for argument in ( d.value.signature.replace /[()]/g, '' ).split ','
+          signature.push argument if ( argument = argument.trim() )? and argument.length > 0
+        this_definition.signature = signature
     #.......................................................................................................
     else if select d, '>definition'
       this_definition.text  = collapse_text this_definition.text
@@ -160,11 +192,14 @@ collapse_text = ( list_of_texts ) ->
     return null
 
 #-----------------------------------------------------------------------------------------------------------
-@read_definitions = ( path ) ->
+@read_definitions           = ( path ) -> await @_read_definitions PD.read_from_file    path
+@read_definitions_from_text = ( text ) -> await @_read_definitions PD.new_value_source  [ text, ]
+
+#-----------------------------------------------------------------------------------------------------------
+@_read_definitions = ( source ) ->
   return new Promise ( resolve, reject ) =>
     R         = {}
     S         = { comments: /^--/, }
-    source    = PD.read_from_file path
     pipeline  = []
     pipeline.push source
     pipeline.push PD.$split()
@@ -173,123 +208,15 @@ collapse_text = ( list_of_texts ) ->
     pipeline.push @$add_headers           S
     pipeline.push @$add_regions           S
     pipeline.push @$skip_ignored          S
+    # pipeline.push PD.$watch ( d ) -> urge 'µ22822', d
+    pipeline.push @$reorder_trailers      S
+    # pipeline.push PD.$watch ( d ) -> urge 'µ22822', d.key, rpr d.value
     pipeline.push @$compile_definitions   S
     pipeline.push @$collect               S, R
     pipeline.push PD.$drain -> resolve R
     PD.pull pipeline...
     return null
 
-# @read_definitions PATH.resolve PATH.join __dirname, '../demos/sqlite-demo.icsql'
 
-# sql = ( require 'yesql' ) PATH.resolve PATH.join __dirname, '../db'
-# debug ( key for key of sql )
-# info rpr sql.add_query
-# info rpr sql.create_table_queries
-
-
-
-# # db_path   = PATH.resolve PATH.join __dirname, '../../db/data.db'
-# Database      = require 'better-sqlite3'
-# sqlitemk_path = PATH.resolve PATH.join __dirname, '../db'
-# db_path       = PATH.join sqlitemk_path, 'demo.db'
-# db            = new Database db_path
-# # db            = new Database db_path, { verbose: urge }
-
-# ( db.prepare sql.drop_table_queries   ).run()
-# ( db.prepare sql.create_table_queries ).run()
-
-# add_query = db.prepare sql.add_query
-# add_query.run { query: 'Zeta' }
-# add_query.run { query: 'Eta' }
-# add_query.run { query: 'epsilon' }
-# add_query.run { query: 'iota' }
-
-# debug '33398'
-# for row from ( db.prepare sql.get_queries ).iterate()
-#   info row
-
-
-# process.exit 1
-
-# source    = PD.new_push_source()
-# pipeline  = []
-# pipeline.push source
-# pipeline.push PD.$show()
-# pipeline.push PD.$drain()
-# PD.pull pipeline...
-
-# as_int = ( x ) -> if x then 1 else 0
-
-# #-----------------------------------------------------------------------------------------------------------
-# db.function 'matches', { deterministic: true, }, ( text, pattern ) ->
-#   return as_int ( text.match new RegExp pattern )?
-
-# #-----------------------------------------------------------------------------------------------------------
-# db.function 'regexp_replace', { deterministic: true, }, ( text, pattern, replacement ) ->
-#   return text.replace ( new RegExp pattern, 'g' ), replacement
-
-# #-----------------------------------------------------------------------------------------------------------
-# db.function 'cleanup_texname', { deterministic: true, }, ( text ) ->
-#   R = text
-#   R = R.replace /\\/g,    ''
-#   R = R.replace /[{}]/g,  '-'
-#   R = R.replace /-+/g,    '-'
-#   R = R.replace /^-/g,    ''
-#   R = R.replace /-$/g,    ''
-#   R = R.replace /'/g,     'acute'
-#   return R
-
-# r = ( strings ) -> return [ 'run',   ( strings.join '' ), ]
-# q = ( strings ) -> return [ 'query', ( strings.join '' ), ]
-
-
-# sqls = [
-#   # q""".tables"""
-#   r"""drop view if exists xxx;"""
-#   q"""select * from amatch_vtable
-#   where true
-#     and ( distance <= 100 )
-#     -- and ( word match 'abc' )
-#     -- and ( word match 'xxxx' )
-#     -- and ( word match 'cat' )
-#     -- and ( word match 'dog' )
-#     -- and ( word match 'television' )
-#     -- and ( word match 'treetop' )
-#     -- and ( word match 'bath' )
-#     -- and ( word match 'kat' )
-#     and ( word match 'laern' )
-#     -- and ( word match 'wheather' )
-#     -- and ( word match 'waether' )
-#     ;"""
-#   # r"""create view xxx as select
-#   #     "UNICODE DESCRIPTION"     as uname,
-#   #     latex                     as latex,
-#   #     cleanup_texname( latex )  as texname
-#   #   from unicode_entities
-#   #   where true
-#   #     and ( not matches( latex, '^\\s*$' ) );"""
-#   # q"""select * from xxx limit 2500;"""
-#   q"""select sqlite_version();"""
-#   ]
-
-# for [ mode, sql, ] in sqls
-#   urge sql
-#   try
-#     statement = db.prepare sql
-#   catch error
-#     whisper '-'.repeat 108
-#     warn "when trying to prepare statement"
-#     info sql
-#     warn "an error occurred:"
-#     info error.message
-#     whisper '-'.repeat 108
-#     throw error
-#   switch mode
-#     when 'run'
-#       debug statement.run()
-#     when 'query'
-#       source.send row for row from statement.iterate()
-#     else
-#       throw new Error "µ95198 unknown mode #{rpr mode}"
 
 

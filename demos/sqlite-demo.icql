@@ -74,8 +74,7 @@ procedure populate_queries:
 --   insert into queries ( query ) values ( $query );
 
 -- ---------------------------------------------------------------------------------------------------------
-query fetch_texnames( $limit ):
-  select * from texnames limit $limit;
+query fetch_texnames( $limit ): select * from texnames limit $limit;
 
 -- ---------------------------------------------------------------------------------------------------------
 query get_queries:
