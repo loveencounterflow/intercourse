@@ -126,7 +126,7 @@ collapse_text = ( list_of_texts ) ->
       within_definition = false
       send d
     #.......................................................................................................
-    else if within_definition and is_oneliner and ( not select d, '>definition' )
+    else if within_definition and is_oneliner and ( not select d, '>definition' ) and not d.is_blank
       throw new Error "µ87872 illegal follow-up after one-liner: #{rpr d}"
     #.......................................................................................................
     else
