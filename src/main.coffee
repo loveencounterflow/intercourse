@@ -48,7 +48,7 @@ collapse_text = ( list_of_texts ) ->
 @$add_headers = ( S ) ->
   header_pattern = /// ^ (?<ictype> \S+ ) \s+ (?<icname> \S+ ) \s* : \s*  $ ///
   ignore_pattern = /// ^ ignore \s* : \s*  $ ///
-  return $ ( d, send ) ->
+  return $ ( d, send ) =>
     return send d if d.is_blank
     return send d if ( d.value.match /^\s/ )?
     #.......................................................................................................
@@ -67,7 +67,7 @@ collapse_text = ( list_of_texts ) ->
   prv_name      = null
   last          = Symbol 'last'
   #.........................................................................................................
-  return $ ( d, send ) ->
+  return $ ( d, send ) =>
     #.......................................................................................................
     if d is last
       if prv_name?
@@ -98,7 +98,7 @@ collapse_text = ( list_of_texts ) ->
 #-----------------------------------------------------------------------------------------------------------
 @$skip_ignored = ( S ) ->
   within_ignore = false
-  return $ ( d, send ) ->
+  return $ ( d, send ) =>
     if select d, '<ignore'
       within_ignore = true
     else if select d, '>ignore'
@@ -109,11 +109,11 @@ collapse_text = ( list_of_texts ) ->
     return null
 
 #-----------------------------------------------------------------------------------------------------------
-@$collect_definitions = ( S ) ->
+@$compile_definitions = ( S ) ->
   this_definition   = null
   this_indentation  = null
   #.........................................................................................................
-  return $ ( d, send ) ->
+  return $ ( d, send ) =>
     #.......................................................................................................
     if select d, '<definition'
       name                = d.value.icname
@@ -123,7 +123,7 @@ collapse_text = ( list_of_texts ) ->
     #.......................................................................................................
     else if select d, '>definition'
       this_definition.text  = collapse_text this_definition.text
-      send this_definition
+      send PD.new_event '^definition', this_definition, $: this_definition.location
       this_definition       = null
       this_indentation      = null
     #.......................................................................................................
@@ -149,23 +149,37 @@ collapse_text = ( list_of_texts ) ->
     return null
 
 #-----------------------------------------------------------------------------------------------------------
-@read_file = ( path ) ->
-  S         = { comments: /^--/, }
-  source    = PD.read_from_file path
-  pipeline  = []
-  pipeline.push source
-  pipeline.push PD.$split()
-  pipeline.push @$as_line_datoms        S
-  pipeline.push @$skip_comments         S
-  pipeline.push @$add_headers           S
-  pipeline.push @$add_regions           S
-  pipeline.push @$skip_ignored          S
-  pipeline.push @$collect_definitions   S
-  pipeline.push PD.$show()
-  pipeline.push PD.$drain()
-  PD.pull pipeline...
+@$collect = ( S, collector ) ->
+  return $ ( d, send ) =>
+    unless select d, '^definition'
+      throw new Error "µ23982 expected a definition datom, got #{rpr d}"
+    definition = d.value
+    if collector[ definition.name ]?
+      throw new Error "µ23983 duplicate name #{definition.name}: #{rpr definition}"
+    collector[ definition.name ] = definition
+    return null
 
-@read_file PATH.resolve PATH.join __dirname, '../demos/sqlite-demo.icsql'
+#-----------------------------------------------------------------------------------------------------------
+@read_definitions = ( path ) ->
+  return new Promise ( resolve, reject ) =>
+    R         = {}
+    S         = { comments: /^--/, }
+    source    = PD.read_from_file path
+    pipeline  = []
+    pipeline.push source
+    pipeline.push PD.$split()
+    pipeline.push @$as_line_datoms        S
+    pipeline.push @$skip_comments         S
+    pipeline.push @$add_headers           S
+    pipeline.push @$add_regions           S
+    pipeline.push @$skip_ignored          S
+    pipeline.push @$compile_definitions   S
+    pipeline.push @$collect               S, R
+    pipeline.push PD.$drain -> resolve R
+    PD.pull pipeline...
+    return null
+
+# @read_definitions PATH.resolve PATH.join __dirname, '../demos/sqlite-demo.icsql'
 
 # sql = ( require 'yesql' ) PATH.resolve PATH.join __dirname, '../db'
 # debug ( key for key of sql )
