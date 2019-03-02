@@ -16,25 +16,21 @@ ignore:
   -- .tables
   -- .schema
 
+-- ---------------------------------------------------------------------------------------------------------
+procedure import_table_texnames:
   drop table if exists texnames;
-
-
-  -- ---------------------------------------------------------------------------------------------------------
-  -- .print '--=(1)=--'
-  .mode csv
-  .import 'tests/texnames.csv' texnames
-  .mode column
+  create virtual table texnames using csv( filename='/home/flow/io/mingkwai-rack/mingkwai-ime/db/texnames.csv' );
 
 -- ---------------------------------------------------------------------------------------------------------
 procedure create_token_tables:
   drop table if exists txftsci;
   drop table if exists txftscs;
-  #.........................................................................................................
+  -- .......................................................................................................
   create virtual table txftsci using fts5(
     input,
     output,
     tokenize = "ascii" );
-  #.........................................................................................................
+  -- .......................................................................................................
   create virtual table txftscs using fts5(
     input,
     output,
@@ -76,6 +72,10 @@ procedure populate_queries:
 -- -- ---------------------------------------------------------------------------------------------------------
 -- procedure add_query( $query ):
 --   insert into queries ( query ) values ( $query );
+
+-- ---------------------------------------------------------------------------------------------------------
+query fetch_texnames( $limit ):
+  select * from texnames limit $limit;
 
 -- ---------------------------------------------------------------------------------------------------------
 query get_queries:
