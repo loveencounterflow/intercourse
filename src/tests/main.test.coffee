@@ -22,10 +22,10 @@ IC                        = require '../..'
 #-----------------------------------------------------------------------------------------------------------
 @[ "basic 1" ] = ( T, done ) ->
   probes_and_matchers = [
-    ["procedure x:\n  foo bar",{"x":{"name":"x","type":"procedure","text":"foo bar\n","location":{"line_nr":1}}},null]
-    ["procedure x:\n  foo bar\n",{"x":{"name":"x","type":"procedure","text":"foo bar\n","location":{"line_nr":1}}},null]
-    ["procedure x:\n  foo bar\n\n",{"x":{"name":"x","type":"procedure","text":"foo bar\n","location":{"line_nr":1}}},null]
-    ["procedure x:\n  foo bar\n\nprocedure y:\n  foo bar\n\n",{"x":{"name":"x","type":"procedure","text":"foo bar\n","location":{"line_nr":1}},"y":{"name":"y","type":"procedure","text":"foo bar\n","location":{"line_nr":4}}},null]
+    ["procedure x:\n  foo bar",{"x":{"arity":{"null":{"text":"foo bar\n","location":{"line_nr":1}}},"type":"procedure"}},null]
+    ["procedure x:\n  foo bar\n",{"x":{"arity":{"null":{"text":"foo bar\n","location":{"line_nr":1}}},"type":"procedure"}},null]
+    ["procedure x:\n  foo bar\n\n",{"x":{"arity":{"null":{"text":"foo bar\n","location":{"line_nr":1}}},"type":"procedure"}},null]
+    ["procedure x:\n  foo bar\n\nprocedure y:\n  foo bar\n\n",{"x":{"arity":{"null":{"text":"foo bar\n","location":{"line_nr":1}}},"type":"procedure"},"y":{"arity":{"null":{"text":"foo bar\n","location":{"line_nr":4}}},"type":"procedure"}},null]
     ]
   #.........................................................................................................
   for [ probe, matcher, error, ] in probes_and_matchers
@@ -42,14 +42,15 @@ IC                        = require '../..'
 #-----------------------------------------------------------------------------------------------------------
 @[ "signatures" ] = ( T, done ) ->
   probes_and_matchers = [
-    ["procedure foobar:\n  some text",{"foobar":{"name":"foobar","type":"procedure","text":"some text\n","location":{"line_nr":1}}},null]
-    ["procedure foobar():\n  some text",{"foobar":{"name":"foobar","type":"procedure","text":"some text\n","location":{"line_nr":1},"signature":[]}},null]
-    ["procedure foobar( first ):\n  some text",{"foobar":{"name":"foobar","type":"procedure","text":"some text\n","location":{"line_nr":1},"signature":["first"]}},null]
-    ["procedure foobar(first):\n  some text",{"foobar":{"name":"foobar","type":"procedure","text":"some text\n","location":{"line_nr":1},"signature":["first"]}},null]
-    ["procedure foobar( first, ):\n  some text",{"foobar":{"name":"foobar","type":"procedure","text":"some text\n","location":{"line_nr":1},"signature":["first"]}},null]
-    ["procedure foobar(first,):\n  some text",{"foobar":{"name":"foobar","type":"procedure","text":"some text\n","location":{"line_nr":1},"signature":["first"]}},null]
-    ["procedure foobar( first, second ):\n  some text",{"foobar":{"name":"foobar","type":"procedure","text":"some text\n","location":{"line_nr":1},"signature":["first","second"]}},null]
-    ["procedure foobar( first, second, ):\n  some text",{"foobar":{"name":"foobar","type":"procedure","text":"some text\n","location":{"line_nr":1},"signature":["first","second"]}},null]
+    ["procedure foobar:\n  some text",{"foobar":{"arity":{"null":{"text":"some text\n","location":{"line_nr":1}}},"type":"procedure"}},null]
+    ["procedure foobar():\n  some text",{"foobar":{"arity":{"0":{"text":"some text\n","location":{"line_nr":1},"signature":[]}},"type":"procedure"}},null]
+    ["procedure foobar( first ):\n  some text",{"foobar":{"arity":{"1":{"text":"some text\n","location":{"line_nr":1},"signature":["first"]}},"type":"procedure"}},null]
+    ["procedure foobar(first):\n  some text",{"foobar":{"arity":{"1":{"text":"some text\n","location":{"line_nr":1},"signature":["first"]}},"type":"procedure"}},null]
+    ["procedure foobar( first, ):\n  some text",{"foobar":{"arity":{"1":{"text":"some text\n","location":{"line_nr":1},"signature":["first"]}},"type":"procedure"}},null]
+    ["procedure foobar(first,):\n  some text",{"foobar":{"arity":{"1":{"text":"some text\n","location":{"line_nr":1},"signature":["first"]}},"type":"procedure"}},null]
+    ["procedure foobar( first, second ):\n  some text",{"foobar":{"arity":{"2":{"text":"some text\n","location":{"line_nr":1},"signature":["first","second"]}},"type":"procedure"}},null]
+    ["procedure foobar( first, second, ):\n  some text",{"foobar":{"arity":{"2":{"text":"some text\n","location":{"line_nr":1},"signature":["first","second"]}},"type":"procedure"}},null]
+    ["procedure foobar( first, second, ): some text\nprocedure foobar( first ): other text\nprocedure foobar(): blah\n",{"foobar":{"arity":{"0":{"text":"blah\n","location":{"line_nr":3},"signature":[]},"1":{"text":"other text\n","location":{"line_nr":2},"signature":["first"]},"2":{"text":"some text\n","location":{"line_nr":1},"signature":["first","second"]}},"type":"procedure"}},null]
     ]
   #.........................................................................................................
   for [ probe, matcher, error, ] in probes_and_matchers
@@ -58,7 +59,7 @@ IC                        = require '../..'
       result = await IC.read_definitions_from_text probe
       # catch error
       #   return resolve error.message
-      debug '29929', result
+      # debug '29929', result
       resolve result
   done()
   return null
@@ -67,14 +68,14 @@ IC                        = require '../..'
 @[ "oneliners" ] = ( T, done ) ->
   probes_and_matchers = [
     # ["procedure foobar:  some text\n  illegal line",null,'illegal follow-up after one-liner']
-    ["procedure foobar:  some text",{"foobar":{"name":"foobar","type":"procedure","text":"some text\n","location":{"line_nr":1}}},null]
-    ["procedure foobar():  some text",{"foobar":{"name":"foobar","type":"procedure","text":"some text\n","location":{"line_nr":1},"signature":[]}},null]
-    ["procedure foobar( first ):  some text",{"foobar":{"name":"foobar","type":"procedure","text":"some text\n","location":{"line_nr":1},"signature":["first"]}},null]
-    ["procedure foobar(first):  some text",{"foobar":{"name":"foobar","type":"procedure","text":"some text\n","location":{"line_nr":1},"signature":["first"]}},null]
-    ["procedure foobar( first, ):  some text",{"foobar":{"name":"foobar","type":"procedure","text":"some text\n","location":{"line_nr":1},"signature":["first"]}},null]
-    ["procedure foobar(first,):  some text",{"foobar":{"name":"foobar","type":"procedure","text":"some text\n","location":{"line_nr":1},"signature":["first"]}},null]
-    ["procedure foobar( first, second ):  some text",{"foobar":{"name":"foobar","type":"procedure","text":"some text\n","location":{"line_nr":1},"signature":["first","second"]}},null]
-    ["procedure foobar( first, second, ):  some text",{"foobar":{"name":"foobar","type":"procedure","text":"some text\n","location":{"line_nr":1},"signature":["first","second"]}},null]
+    ["procedure foobar: some text",{"foobar":{"arity":{"null":{"text":"some text\n","location":{"line_nr":1}}},"type":"procedure"}},null]
+    ["procedure foobar(): some text",{"foobar":{"arity":{"0":{"text":"some text\n","location":{"line_nr":1},"signature":[]}},"type":"procedure"}},null]
+    ["procedure foobar( first ): some text",{"foobar":{"arity":{"1":{"text":"some text\n","location":{"line_nr":1},"signature":["first"]}},"type":"procedure"}},null]
+    ["procedure foobar(first): some text",{"foobar":{"arity":{"1":{"text":"some text\n","location":{"line_nr":1},"signature":["first"]}},"type":"procedure"}},null]
+    ["procedure foobar( first, ): some text",{"foobar":{"arity":{"1":{"text":"some text\n","location":{"line_nr":1},"signature":["first"]}},"type":"procedure"}},null]
+    ["procedure foobar(first,): some text",{"foobar":{"arity":{"1":{"text":"some text\n","location":{"line_nr":1},"signature":["first"]}},"type":"procedure"}},null]
+    ["procedure foobar( first, second ): some text",{"foobar":{"arity":{"2":{"text":"some text\n","location":{"line_nr":1},"signature":["first","second"]}},"type":"procedure"}},null]
+    ["procedure foobar( first, second, ): some text",{"foobar":{"arity":{"2":{"text":"some text\n","location":{"line_nr":1},"signature":["first","second"]}},"type":"procedure"}},null]
     ]
   #.........................................................................................................
   for [ probe, matcher, error, ] in probes_and_matchers
@@ -88,6 +89,14 @@ IC                        = require '../..'
   done()
   return null
 
+#-----------------------------------------------------------------------------------------------------------
+@[ "_parse demo" ] = ( T, done ) ->
+  PATH      = require 'path'
+  path      = PATH.join __dirname, '../../demos/sqlite-demo.icql'
+  debug JSON.stringify ( await IC.read_definitions path ), null, '  '
+  done()
+  return null
+
 
 
 
@@ -95,7 +104,9 @@ IC                        = require '../..'
 ############################################################################################################
 unless module.parent?
   test @
+  # test @[ "basic 1" ]
   # test @[ "signatures" ]
   # test @[ "oneliners" ]
+  # test @[ "_parse demo" ]
 
 
