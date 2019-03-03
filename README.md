@@ -119,8 +119,10 @@ query match_snippet( probe ):
 
 -- ---------------------------------------------------------------------------------------------------------
 -- one-liners and overloading are possible, too:
-query fetch_texnames():         select * from texnames;
-query fetch_texnames( $limit ): select * from texnames limit $limit;
+query fetch_texnames():                   select * from texnames;
+query fetch_texnames( limit ):            select * from texnames limit $limit;
+query fetch_texnames( pattern ):          select * from texnames where texname like pattern;
+query fetch_texnames( pattern, limit ):   select * from texnames where texname like pattern limit $limit;
 
 -- ---------------------------------------------------------------------------------------------------------
 -- everything under an `ignore` heading will be ignored (duh):
@@ -173,9 +175,22 @@ fetch_texnames:
     '(limit)':
       text:         'select * from texnames limit $limit;\n'
       location:     { line_nr: 34, }
-      signature:    [ '$limit', ]
+      signature:    [ 'limit', ]
+    '(pattern)':
+      text:         'select * from texnames where texname like pattern;\n'
+      location:     { line_nr: 34, }
+      signature:    [ 'pattern', ]
+    '(limit,pattern)':
+      text:         'select * from texnames where texname like pattern limit $limit;\n'
+      location:     { line_nr: 34, }
+      signature:    [ 'limit', 'pattern', ]
 ```
 
 
+In the above, observe how `description.fetch_texnames.arity[ '(limit,pattern)' ]` has been normalized from
+the original definition, `query fetch_texnames( pattern, limit ):`. Null signatures are indexed under
+`'null'` and lack a `signature` entry, while empty signatures are indexed under `()` and have an empty list
+as `signature`. The source texts are either empty strings (in the case no hunk has been given) or else end
+in a single newline.
 
 
