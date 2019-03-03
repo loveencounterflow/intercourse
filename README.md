@@ -7,9 +7,10 @@ InterCourse (IC) is YeSQL-like utlity to treat files as archives of hunks of fun
 IOW, it is a tool that lets you collect named snippets of arbitrary code—e.g. SQL queries and statements—in
 text files. These snippets can then be retrieved and, for example, turned into functions that execute
 queries against a database. InterCourse itself does a single job: it takes the path to an existing file and
-returns a data structure that describes the definitions it found. It's up to users of InterCourse to bring
-those definitions to life (e.g. parse them to turn them into JS fiunctions, or wrap them in JS functions and
-send the hunks to a database for execution, as does [`icql`](https://github.com/loveencounterflow/icql)).
+returns a data structure that describes the definitions it found. It's up to users of InterCourse (the
+'consumer') to bring those definitions to life (e.g. parse them to turn them into JS fiunctions, or wrap
+them in JS functions and send the hunks to a database for execution, as does
+[`icql`](https://github.com/loveencounterflow/icql)).
 
 The format is whitespace-sensitive and super-simple:
 
@@ -18,6 +19,12 @@ The format is whitespace-sensitive and super-simple:
 
 * A directive consists of a type annotation (that can be freely chosen), a name (that may not contain
   whitespace or round brackets), an optional signature, and a source text (the 'hunk').
+
+* IC puts no limit on the definition type and does not do anything with it except store it in the returned
+  description. It's up to InterCourse consumers to make sense of definition types. In the case of
+  [`icql`](https://github.com/loveencounterflow/icql), the allowed types are `query` for SQL statements that
+  do return results (i.e. `SELECT`), and `procedure` for (series of) statements that do not return results
+  (i.e. `CREATE`, `DROP`, `INSERT`).
 
 * The elements of the signature (i.e. the parameters) are not further validated; instead, we just look for
   intermittent commas and remove surrounding whitespace. This may change in the future.
@@ -93,14 +100,14 @@ The above will be turned into a JS object (here shown using YAML / CoffeeScript 
 import_table_texnames:
   type:   'procedure'
   arity:
-    null:
+    'null':
       text:         'drop table if exists texnames;\ncreate virtual table texnames using csv( filename='texnames.csv' );\n'
       location:     { line_nr: 4, }
 
 create_snippet_table: {
   type:   'procedure'
   arity:
-    '0':
+    '()':
       text:         'drop table if exists snippets;\ncreate table snippets (\n    id      integer primary key,\n    snippet text not null );\n'
       location:     { line_nr: 10, }
       signature:    []
@@ -108,7 +115,7 @@ create_snippet_table: {
 populate_snippets:
   type:   'procedure'
   arity:
-    '0':
+    '()':
       text:         'insert into snippets ( snippet ) values\n  ( 'iota' ),\n  ( 'Iota' ),\n  ( 'alpha' ),\n  ( 'Alpha' ),\n  ( 'beta' ),\n  ( 'Beta' );\n'
       location:     { line_nr: 17, }
       signature:    []
@@ -116,7 +123,7 @@ populate_snippets:
 match_snippet:
   type:   'query'
   arity:
-    '1':
+    '(probe)':
       text:         'select id, snippet from snippets where snippet like $probe\n'
       location:     { line_nr: 28, }
       signature:    [ 'probe', ]
@@ -124,11 +131,11 @@ match_snippet:
 fetch_texnames:
   type:   'query'
   arity:
-    '0':
+    '()':
       text:         'select * from texnames;\n'
       location:     { line_nr: 33, }
       signature:    []
-    '1':
+    '(limit)':
       text:         'select * from texnames limit $limit;\n'
       location:     { line_nr: 34, }
       signature:    [ '$limit', ]
