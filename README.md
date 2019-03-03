@@ -20,14 +20,17 @@ The format is whitespace-sensitive and super-simple:
 * A directive consists of a type annotation (that can be freely chosen), a name (that may not contain
   whitespace or round brackets), an optional signature, and a source text (the 'hunk').
 
-* IC puts no limit on the definition type and does not do anything with it except store it in the returned
-  description. It's up to InterCourse consumers to make sense of definition types. In the case of
-  [`icql`](https://github.com/loveencounterflow/icql), the allowed types are `query` for SQL statements that
-  do return results (i.e. `SELECT`), and `procedure` for (series of) statements that do not return results
-  (i.e. `CREATE`, `DROP`, `INSERT`).
+* IC itself puts no limit on definition types and does not do anything with it except that it stores the
+  types in the returned description. It's up to InterCourse consumers to make sense of definition types. In
+  the case of [`icql`](https://github.com/loveencounterflow/icql), the allowed types are `query` for SQL
+  statements that do return results (i.e. `SELECT`), and `procedure` for (series of) statements that do not
+  return results (i.e. `CREATE`, `DROP`, `INSERT`).
 
 * The elements of the signature (i.e. the parameters) are not further validated; instead, we just look for
-  intermittent commas and remove surrounding whitespace. This may change in the future.
+  intermittent commas and remove surrounding whitespace. These details may change in the future so it's best
+  to restrict oneself to anything that would be a valid JavaScript function signature without type
+  annotations and without default values (e.g. you could write `def f( x = 42 )` but you'd probably best
+  not).
 
 * When giving multiple definitions for the same name, *each definition must choose a unique set of
   parameters*, be it by using a different number of parameters or different names in the case of the same
@@ -39,7 +42,15 @@ The format is whitespace-sensitive and super-simple:
 * When giving a definition without round brackets (as in `def myname: ...`), this is known as a 'null
   signature' and will be interpreted as a catch-all definition that won't get signature-checked.
   Consequently, it is an error to use such a signature-less definition in conjunction with namesake
-  definitions that have a signature, including the empty one.
+  definitions that do have a signature, including the empty one.
+
+* The above two rules serve to ensure that the definitions as returned by InterCourse lend themselves to
+  implement conflict-free function overloading. When you turn IC hunks into JS functions *that take, as
+  their sole argument, a JS object*, then you will always be able to tell which definition will be used from
+  the names that appear in the call. For example, when, in your app, you call `myfunc( { a: 42, b: true, }
+  )`, the above rules ensure there must either be a definition like `... myfunc( a, b ):
+  ...` (exactly as in the call) or `... myfunc( b, a ): ...` (same names but different order) or `...
+  myfunc: ...` (a catch-all that precludes any other definitions with explicit signatures).
 
 * A definition with round brackets but no parameters inside is called an 'empty signature' and will be taken
   to symbolize a function call with no arguments.
