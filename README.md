@@ -32,28 +32,32 @@ The format is whitespace-sensitive and super-simple:
   annotations and without default values (e.g. you could write `def f( x = 42 )` but you'd probably best
   not).
 
-* When giving multiple definitions for the same name, *each definition must choose a unique set of
-  parameters*, be it by using a different number of parameters or different names in the case of the same
-  number of parameters. Order of appearance is discarded. So when you have already a definition `def foo( bar
-  ): ...` you can add a definition `def foo( baz )` (other name) and a definition `def foo( bar, baz )` (other
-  number of parameters), but `def foo( baz, bar )` would be considered as equivalent to `def foo( bar, baz )`
-  and will throw an error.
+* When giving multiple definitions for the same name, *each definition must have a unique set of
+  parameters*. Order of appearance is discarded. So when you have already a definition `def foo( bar ): ...`
+  you can add a definition `def foo( baz )` (other name) and a definition `def foo( bar, baz )` (other
+  number of parameters), but `def foo( baz, bar )` would be considered as equivalent to `def foo( bar, baz
+  )` and will throw an error.
 
-* When giving a definition without round brackets (as in `def myname: ...`), this is known as a 'null
-  signature' and will be interpreted as a catch-all definition that won't get signature-checked.
-  Consequently, it is an error to use such a signature-less definition in conjunction with namesake
-  definitions that do have a signature, including the empty one.
+* When giving a definition *without* round brackets (as in `def myname: ...`), this is known as a 'null
+  signature' and will be interpreted as a catch-all definition that won't get signature-checked. A
+  definition *with* round brackets but *no parameters inside* is called an 'empty signature' and will be
+  taken to symbolize a function call with no arguments. The signatures of all other definitions (i.e. those
+  with parameters) are called 'full signatures'.
 
-* The above two rules serve to ensure that the definitions as returned by InterCourse lend themselves to
+  **One can only either give a single null-signature definition or else any number of empty- and
+  full-signature definitions under the same name**. Thus use of `def f: ...` on the hand and `def f(): ...`
+  and / or `def f( x ): ...` etc is mutually exclusive.
+
+* As it stands, all definitions with the same name must be of the same nominal type. This restriction may be
+  lifted or made optional in the future.
+
+* The above three rules serve to ensure that the definitions as returned by InterCourse lend themselves to
   implement conflict-free function overloading. When you turn IC hunks into JS functions *that take, as
   their sole argument, a JS object*, then you will always be able to tell which definition will be used from
   the names that appear in the call. For example, when, in your app, you call `myfunc( { a: 42, b: true, }
   )`, the above rules ensure there must either be a definition like `... myfunc( a, b ):
   ...` (exactly as in the call) or `... myfunc( b, a ): ...` (same names but different order) or `...
   myfunc: ...` (a catch-all that precludes any other definitions with explicit signatures).
-
-* A definition with round brackets but no parameters inside is called an 'empty signature' and will be taken
-  to symbolize a function call with no arguments.
 
 * Each line in a block must start with the same whitespace characters (or else be blank); this indentation
   is called the 'plinth' and will be subtracted from each line. Currently, each block may have its own
