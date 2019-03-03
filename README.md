@@ -1,16 +1,48 @@
 
 
+
 # InterCourse
 
-InterCourse (IC) is YeSQL-like utlity to treat files as archives of hunks of functionality descriptions, IOW, it
-is a tool that lets you collect named snippets of arbitrary code—e.g. SQL queries and statements—in text
-files. These snippets can then be retrieved and, for example, turned into functions that execute
-queries against a database.
+InterCourse (IC) is YeSQL-like utlity to treat files as archives of hunks of functionality descriptions,
+IOW, it is a tool that lets you collect named snippets of arbitrary code—e.g. SQL queries and statements—in
+text files. These snippets can then be retrieved and, for example, turned into functions that execute
+queries against a database. InterCourse itself does a single job: it takes the path to an existing file and
+returns a data structure that describes the definitions it found. It's up to users of InterCourse to bring
+those definitions to life (e.g. parse them to turn them into JS fiunctions, or wrap them in JS functions and
+send the hunks to a database for execution, as does [`icql`](https://github.com/loveencounterflow/icql)).
 
-The format is whitespace-sensitive and super-simple: Each line that does not start with whitespace and is
-not a top-level comment is considered an IC directive (or a syntax error in case it fails to parse). A
-directive consists of a type annotation (that can be freely chosen), a name (that may not contain whitespace
-or round brackets), an optional signature, and a source text. For example:
+The format is whitespace-sensitive and super-simple:
+
+* Each line that does not start with whitespace and is not a top-level comment is considered an IC directive
+  (or a syntax error in case it fails to parse).
+
+* A directive consists of a type annotation (that can be freely chosen), a name (that may not contain
+  whitespace or round brackets), an optional signature, and a source text (the 'hunk').
+
+* The elements of the signature (i.e. the parameters) are not further validated; instead, we just look for
+  intermittent commas and remove surrounding whitespace. This may change in the future.
+
+* When giving multiple definitions for the same name, *each definition must choose a unique set of
+  parameters*, be it by using a different number of parameters or different names in the case of the same
+  number of parameters. Order of appearance is discarded. So when you have already a definition `def foo( bar
+  ): ...` you can add a definition `def foo( baz )` (other name) and a definition `def foo( bar, baz )` (other
+  number of parameters), but `def foo( baz, bar )` would be considered as equivalent to `def foo( bar, baz )`
+  and will throw an error.
+
+* When giving a definition without round brackets (as in `def myname: ...`), this is known as a 'null
+  signature' and will be interpreted as a catch-all definition that won't get signature-checked.
+  Consequently, it is an error to use such a signature-less definition in conjunction with namesake
+  definitions that have a signature, including the empty one.
+
+* A definition with round brackets but no parameters inside is called an 'empty signature' and will be taken
+  to symbolize a function call with no arguments.
+
+* Each line in a block must start with the same whitespace characters (or else be blank); this indentation
+  is called the 'plinth' and will be subtracted from each line. Currently, each block may have its own
+  plinth, but that may change in the future (and it's probably a good idea never to mix tabs and spaces in a
+  single file anyway).
+
+Here's an example:
 
 ```sql
 
@@ -57,7 +89,7 @@ ignore:
 The above will be turned into a JS object (here shown using YAML / CoffeeScript notation):
 
 
-```coffee
+```yaml
 import_table_texnames:
   type:   'procedure'
   arity:
@@ -102,13 +134,6 @@ fetch_texnames:
       signature:    [ '$limit', ]
 ```
 
-Observe the following syntactical constraints:
 
-* When giving multiple definitions with the same name, each definition must have another arity (number of
-  formal arguments).
 
-* When giving multiple definitions with the same name, no definition may be given with no round brackets
-  (symbolized as arity `'null'`).
 
-* Each line in a block must start with the same whitespace characters (or else be blank); this indentation
-  will be subtracted from each line.
