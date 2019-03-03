@@ -33,6 +33,12 @@ collapse_text = ( list_of_texts ) ->
   return R
 
 #-----------------------------------------------------------------------------------------------------------
+has_full_signatures = ( entry ) ->
+  for k of entry
+    return true if k.startsWith '('
+  return false
+
+#-----------------------------------------------------------------------------------------------------------
 @$as_line_datoms = ( S ) ->
   line_nr = 0
   return $ ( line, send ) ->
@@ -146,12 +152,14 @@ collapse_text = ( list_of_texts ) ->
       type                = d.value.ictype
       location            = d.$
       signature           = null
-      this_definition     = { name, type, text: [], location, }
+      this_definition     = { name, type, text: [], location, kenning: 'null', }
       if d.value.signature?
         signature = []
         for argument in ( d.value.signature.replace /[()]/g, '' ).split ','
           signature.push argument if ( argument = argument.trim() )? and argument.length > 0
+        signature.sort()
         this_definition.signature = signature
+        this_definition.kenning   = '(' + ( signature.join ',' ) + ')'
     #.......................................................................................................
     else if select d, '>definition'
       this_definition.text  = collapse_text this_definition.text
@@ -186,25 +194,37 @@ collapse_text = ( list_of_texts ) ->
     unless select d, '^definition'
       throw new Error "µ23982 expected a '^definition', got #{rpr d}"
     #.......................................................................................................
-    lnr           = d.$.line
-    definition    = d.value
-    entry         = ( collector[ definition.name ] ?= { arity: {}, type: definition.type, } )
-    arity         = if definition.signature? then definition.signature.length else 'null'
-    { text
+    lnr                 = d.$.line_nr
+    definition          = d.value
+    { type
+      text
       location
-      signature } = definition
+      kenning
+      signature }       = definition
+    entry               = ( collector[ definition.name ] ?= { type, } )
     #.......................................................................................................
     unless d.value.type is entry.type
-      throw new Error "µ94432 expected type #{rpr entry.type}, got #{rpr definition.type} (##{lnr})"
+      throw new Error """µ94432
+        expected type #{rpr entry.type}, got
+        #{rpr definition.type}
+        (line ##{lnr})"""
     #.......................................................................................................
-    if entry.arity[ arity ]?
-      throw new Error "µ23983 name #{definition.name} arity #{arity} already defined: #{rpr definition} (##{lnr})"
+    if entry[ kenning ]?
+      throw new Error """µ23983
+        name #{definition.name} with kenning #{rpr kenning} already defined:
+        #{rpr definition}
+        (line ##{lnr})"""
     #.......................................................................................................
-    if arity is 'null' and ( Object.keys entry.arity ).length > 0
-      throw new Error "µ23983 can't overload definition with signature with signature-less definition: #{rpr definition} (##{lnr})"
+    ### TAINT must re-implement ###
+    if ( kenning is 'null' ) and ( has_full_signatures entry )
+      debug entry
+      throw new Error """µ23983
+        can't overload explicit-signature definition with a null-signature definition:
+        #{rpr definition}
+        (line ##{lnr})"""
     #.......................................................................................................
-    entry.arity[ arity ]            = { text, location, }
-    entry.arity[ arity ].signature  = signature if signature?
+    entry[ kenning ]            = { text, location, kenning, type, }
+    entry[ kenning ].signature  = signature if signature?
     #.......................................................................................................
     return null
 
