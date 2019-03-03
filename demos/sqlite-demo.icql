@@ -30,8 +30,10 @@ query match_snippet( probe ):
 
 -- ---------------------------------------------------------------------------------------------------------
 -- one-liners and overloading are possible, too:
-query fetch_texnames():         select * from texnames;
-query fetch_texnames( $limit ): select * from texnames limit $limit;
+query fetch_texnames():                   select * from texnames;
+query fetch_texnames( limit ):            select * from texnames limit $limit;
+query fetch_texnames( pattern ):          select * from texnames where texname like pattern;
+query fetch_texnames( pattern, limit ):   select * from texnames where texname like pattern limit $limit;
 
 -- ---------------------------------------------------------------------------------------------------------
 -- everything under an `ignore` heading will be ignored (duh):
