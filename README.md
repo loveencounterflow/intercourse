@@ -58,10 +58,13 @@ The format is whitespace-sensitive and super-simple:
   not).
 
 * When giving multiple definitions for the same name, **each definition must have a unique set of named
-  parameters**. Order of appearance is discarded. So when you have already a definition `def foo( bar ):
-  ...` you can add a definition `def foo( baz )` (other name) and a definition `def foo( bar, baz )` (other
-  number of parameters), but `def foo( baz, bar )` would be considered as equivalent to `def foo( bar, baz
-  )` and will throw an error.
+  parameters**. Order of appearance is discarded. More precisely, the parameter names of the signature are
+  sorted (using JS `Array.prototype.sort()`), joined with commas and wrapped with round brackets to obtain a
+  unique key (which is called the 'kenning' of the definition); it is this key that must turn out be unique.
+
+  So when you have already a definition `def foo( bar ): ...` you can add a definition `def foo( baz )`
+  (other name) and a definition `def foo( bar, baz )` (other number of parameters), but `def foo( baz, bar
+  )` would be considered as equivalent to `def foo( bar, baz )` and will throw an error.
 
 * Signatures of **definition without round brackets** (as in `def myname: ...`) are known as 'null
   signatures' and may be interpreted as a catch-all definitions that won't get signature-checked. Signatures
@@ -132,65 +135,75 @@ ignore:
 
 The above will be turned into a JS object (here shown using YAML / CoffeeScript notation):
 
-
 ```yaml
 import_table_texnames:
   type:   'procedure'
-  arity:
-    'null':
-      text:         'drop table if exists texnames;\ncreate virtual table texnames using csv( filename='texnames.csv' );\n'
-      location:     { line_nr: 4, }
+  'null':
+    text:         'drop table if exists texnames;\ncreate virtual table texnames using csv( filename='texnames.csv' );\n'
+    kenning:      'null'
+    type:         'procedure'
+    location:     { line_nr: 4, }
 
 create_snippet_table: {
   type:   'procedure'
-  arity:
-    '()':
-      text:         'drop table if exists snippets;\ncreate table snippets (\n    id      integer primary key,\n    snippet text not null );\n'
-      location:     { line_nr: 10, }
-      signature:    []
+  '()':
+    text:         'drop table if exists snippets;\ncreate table snippets (\n    id      integer primary key,\n    snippet text not null );\n'
+    kenning:      '()'
+    type:         'procedure'
+    location:     { line_nr: 10, }
+    signature:    []
 
 populate_snippets:
   type:   'procedure'
-  arity:
-    '()':
-      text:         'insert into snippets ( snippet ) values\n  ( 'iota' ),\n  ( 'Iota' ),\n  ( 'alpha' ),\n  ( 'Alpha' ),\n  ( 'beta' ),\n  ( 'Beta' );\n'
-      location:     { line_nr: 17, }
-      signature:    []
+  '()':
+    text:         'insert into snippets ( snippet ) values\n  ( 'iota' ),\n  ( 'Iota' ),\n  ( 'alpha' ),\n  ( 'Alpha' ),\n  ( 'beta' ),\n  ( 'Beta' );\n'
+    kenning:      '()'
+    type:         'procedure'
+    location:     { line_nr: 17, }
+    signature:    []
 
 match_snippet:
   type:   'query'
-  arity:
-    '(probe)':
-      text:         'select id, snippet from snippets where snippet like $probe\n'
-      location:     { line_nr: 28, }
-      signature:    [ 'probe', ]
+  '(probe)':
+    kenning:      '(probe)'
+    text:         'select id, snippet from snippets where snippet like $probe\n'
+    type:         'query'
+    location:     { line_nr: 28, }
+    signature:    [ 'probe', ]
 
 fetch_texnames:
   type:   'query'
-  arity:
-    '()':
-      text:         'select * from texnames;\n'
-      location:     { line_nr: 33, }
-      signature:    []
-    '(limit)':
-      text:         'select * from texnames limit $limit;\n'
-      location:     { line_nr: 34, }
-      signature:    [ 'limit', ]
-    '(pattern)':
-      text:         'select * from texnames where texname like pattern;\n'
-      location:     { line_nr: 34, }
-      signature:    [ 'pattern', ]
-    '(limit,pattern)':
-      text:         'select * from texnames where texname like pattern limit $limit;\n'
-      location:     { line_nr: 34, }
-      signature:    [ 'limit', 'pattern', ]
+  '()':
+    kenning:      '()'
+    text:         'select * from texnames;\n'
+    type:         'query'
+    location:     { line_nr: 33, }
+    signature:    []
+  '(limit)':
+    kenning:      '(limit)'
+    text:         'select * from texnames limit $limit;\n'
+    type:         'query'
+    location:     { line_nr: 34, }
+    signature:    [ 'limit', ]
+  '(pattern)':
+    kenning:      '(pattern)'
+    text:         'select * from texnames where texname like pattern;\n'
+    type:         'query'
+    location:     { line_nr: 34, }
+    signature:    [ 'pattern', ]
+  '(limit,pattern)':
+    kenning:      '(limit,pattern)'
+    text:         'select * from texnames where texname like pattern limit $limit;\n'
+    type:         'query'
+    location:     { line_nr: 34, }
+    signature:    [ 'limit', 'pattern', ]
 ```
 
 
-In the above, observe how `description.fetch_texnames.arity[ '(limit,pattern)' ]` has been normalized from
-the original definition, `query fetch_texnames( pattern, limit ):`. Null signatures are indexed under
-`'null'` and lack a `signature` entry, while empty signatures are indexed under `()` and have an empty list
-as `signature`. The source texts are either empty strings (in the case no hunk has been given) or else end
-in a single newline.
+In the above, observe how `description.fetch_texnames[ '(limit,pattern)' ]` has been normalized from the
+original definition, `query fetch_texnames( pattern, limit ):`. Null signatures are indexed under `'null'`
+and lack a `signature` entry, while empty signatures are indexed under `()` and have an empty list as
+`signature`. The source texts are either empty strings (in the case no hunk has been given) or else end in a
+single newline.
 
 
