@@ -35,9 +35,9 @@ The format is whitespace-sensitive and super-simple:
     ...
   ```
 
-  Observe that **blank lines *within hunks* are kept**, but **blank lines *between definitions* are
-  discarded**. Relative ordering of definitions has no effect whatsover on processing (except potentially
-  for the precise wording of error messages in the case of rule violations).
+  Observe that **blank lines within hunks are kept, but blank lines between definitions are discarded**.
+  Relative ordering of definitions has no effect whatsover on processing (except for the wording of
+  potential error messages).
 
 * **Each line in the hunk of a multi-liner must start with the same whitespace characters** (or else be
   blank); this indentation is called the 'plinth' and will be subtracted from each line. Currently, each
@@ -63,21 +63,21 @@ The format is whitespace-sensitive and super-simple:
   number of parameters), but `def foo( baz, bar )` would be considered as equivalent to `def foo( bar, baz
   )` and will throw an error.
 
-* When giving a definition *without* round brackets (as in `def myname: ...`), this is known as a 'null
-  signature' and will be interpreted as a catch-all definition that won't get signature-checked. A
-  definition *with* round brackets but *no parameters inside* is called an 'empty signature' and will be
-  taken to symbolize a function call with no arguments. The signatures of all other definitions (i.e. those
-  with parameters) are called 'full signatures'.
+* Signatures of **definition without round brackets** (as in `def myname: ...`) are known as 'null
+  signatures' and may be interpreted as a catch-all definitions that won't get signature-checked. Signatures
+  of **definitions with round brackets but no parameters inside** are called 'empty signatures' and will be
+  taken to symbolize to allow for function calls with no arguments. The signatures of all other definitions
+  (i.e. those with parameters) are called 'full signatures'.
 
   **One can only either give a single null-signature definition or else any number of empty- and
   full-signature definitions under the same name**. Thus use of `def f: ...` on the hand and `def f(): ...`
   and / or `def f( x ): ...` etc is mutually exclusive.
 
-* As it stands, all definitions with the same name must be of the same nominal type. This restriction may be
-  lifted or made optional in the future.
+* As it stands, **all definitions with the same name must be of the same nominal type**. This restriction
+  may be lifted or made optional in the future.
 
 * The above three rules serve to ensure that the definitions as returned by InterCourse lend themselves to
-  implement conflict-free function overloading. When you turn IC hunks into JS functions *that take, as
+  implement conflict-free **function overloading**. When you turn IC hunks into JS functions *that take, as
   their sole argument, a JS object*, then you will always be able to tell which definition will be used from
   the names that appear in the call. For example, when, in your app, you call `myfunc( { a: 42, b: true, }
   )`, the above rules ensure there must either be a definition like `... myfunc( a, b ):
