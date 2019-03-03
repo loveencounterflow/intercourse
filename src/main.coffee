@@ -143,6 +143,7 @@ has_full_signatures = ( entry ) ->
 #-----------------------------------------------------------------------------------------------------------
 @get_signature_and_kenning = ( signature = null ) ->
   return [ null, 'null', ] unless signature?
+  signature = Object.keys signature unless CND.isa_list signature
   signature = signature[ .. ].sort()
   kenning   = '(' + ( signature.join ',' ) + ')'
   return [ signature, kenning, ]
