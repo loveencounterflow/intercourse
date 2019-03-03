@@ -141,7 +141,8 @@ has_full_signatures = ( entry ) ->
     return null
 
 #-----------------------------------------------------------------------------------------------------------
-@get_signature_and_kenning = ( signature ) ->
+@get_signature_and_kenning = ( signature = null ) ->
+  return [ null, 'null', ] unless signature?
   signature = signature[ .. ].sort()
   kenning   = '(' + ( signature.join ',' ) + ')'
   return [ signature, kenning, ]
