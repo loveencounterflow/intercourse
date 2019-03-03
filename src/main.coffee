@@ -141,6 +141,12 @@ has_full_signatures = ( entry ) ->
     return null
 
 #-----------------------------------------------------------------------------------------------------------
+@get_signature_and_kenning = ( signature ) ->
+  signature = signature[ .. ].sort()
+  kenning   = '(' + ( signature.join ',' ) + ')'
+  return [ signature, kenning, ]
+
+#-----------------------------------------------------------------------------------------------------------
 @$compile_definitions = ( S ) ->
   this_definition   = null
   this_indentation  = null
@@ -157,9 +163,10 @@ has_full_signatures = ( entry ) ->
         signature = []
         for argument in ( d.value.signature.replace /[()]/g, '' ).split ','
           signature.push argument if ( argument = argument.trim() )? and argument.length > 0
-        signature.sort()
+        [ signature
+          kenning ]               = @get_signature_and_kenning signature
         this_definition.signature = signature
-        this_definition.kenning   = '(' + ( signature.join ',' ) + ')'
+        this_definition.kenning   = kenning
     #.......................................................................................................
     else if select d, '>definition'
       this_definition.text  = collapse_text this_definition.text
