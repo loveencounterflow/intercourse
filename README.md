@@ -14,17 +14,42 @@ them in JS functions and send the hunks to a database for execution, as does
 
 The format is whitespace-sensitive and super-simple:
 
-* Each line that does not start with whitespace and is not a top-level comment is considered an IC directive
-  (or a syntax error in case it fails to parse).
+* **Each line that does not start with whitespace and is not a top-level comment is considered an IC
+  directive** (or a syntax error in case it fails to parse).
 
-* A directive consists of a type annotation (that can be freely chosen), a name (that may not contain
-  whitespace or round brackets), an optional signature, and a source text (the 'hunk').
+* A directive consists of a **type annotation** (that can be freely chosen), a **name** (that may not contain
+  whitespace or round brackets), an **optional signature**, and a **source text** (the 'hunk').
 
-* IC itself puts no limit on definition types and does not do anything with it except that it stores the
-  types in the returned description. It's up to InterCourse consumers to make sense of definition types. In
-  the case of [`icql`](https://github.com/loveencounterflow/icql), the allowed types are `query` for SQL
-  statements that do return results (i.e. `SELECT`), and `procedure` for (series of) statements that do not
-  return results (i.e. `CREATE`, `DROP`, `INSERT`).
+* A definition is either a **one-liner** as in
+
+  ```
+  mytype myname(): myhunk
+  ```
+
+  or else a **multi-liner** as in
+
+  ```
+  mytype myname():
+    first line
+    second line
+    ...
+  ```
+
+  Observe that **blank lines *within hunks* are kept**, but **blank lines *between definitions* are
+  discarded**. Relative ordering of definitions has no effect whatsover on processing (except potentially
+  for the precise wording of error messages in the case of rule violations).
+
+* **Each line in the hunk of a multi-liner must start with the same whitespace characters** (or else be
+  blank); this indentation is called the 'plinth' and will be subtracted from each line. Currently, each
+  block may have its own plinth, but that may change in the future (and it's probably a good idea never to
+  mix tabs and spaces in a single file anyway).
+
+* **IC itself puts no limit on definition types** and does not do anything with it except that it stores the
+  (names of the types) in the returned description. It's up to InterCourse consumers to make sense of
+  definition types, spot unknown ones, error out in the case of types and so on. In the case of
+  [`icql`](https://github.com/loveencounterflow/icql), the allowed types are `query` for SQL statements that
+  do return results (i.e. `SELECT`), and `procedure` for (series of) statements that do not return results
+  (i.e. `CREATE`, `DROP`, `INSERT`).
 
 * The elements of the signature (i.e. the parameters) are not further validated; instead, we just look for
   intermittent commas and remove surrounding whitespace. These details may change in the future so it's best
@@ -32,9 +57,9 @@ The format is whitespace-sensitive and super-simple:
   annotations and without default values (e.g. you could write `def f( x = 42 )` but you'd probably best
   not).
 
-* When giving multiple definitions for the same name, *each definition must have a unique set of
-  parameters*. Order of appearance is discarded. So when you have already a definition `def foo( bar ): ...`
-  you can add a definition `def foo( baz )` (other name) and a definition `def foo( bar, baz )` (other
+* When giving multiple definitions for the same name, **each definition must have a unique set of named
+  parameters**. Order of appearance is discarded. So when you have already a definition `def foo( bar ):
+  ...` you can add a definition `def foo( baz )` (other name) and a definition `def foo( bar, baz )` (other
   number of parameters), but `def foo( baz, bar )` would be considered as equivalent to `def foo( bar, baz
   )` and will throw an error.
 
@@ -58,11 +83,6 @@ The format is whitespace-sensitive and super-simple:
   )`, the above rules ensure there must either be a definition like `... myfunc( a, b ):
   ...` (exactly as in the call) or `... myfunc( b, a ): ...` (same names but different order) or `...
   myfunc: ...` (a catch-all that precludes any other definitions with explicit signatures).
-
-* Each line in a block must start with the same whitespace characters (or else be blank); this indentation
-  is called the 'plinth' and will be subtracted from each line. Currently, each block may have its own
-  plinth, but that may change in the future (and it's probably a good idea never to mix tabs and spaces in a
-  single file anyway).
 
 Here's an example:
 
