@@ -207,3 +207,29 @@ and lack a `signature` entry, while empty signatures are indexed under `()` and 
 single newline.
 
 
+## What's Missing
+
+Since InterCourse is pretty much still in the experimental phase, it's straightforward to come up
+with a number of very useful features that are not yet implemented:
+
+* [ ] **Parametrized Types**—definition types could take arguments to indicate behavioral variants. For
+  example, `query( collect: true ) foo(): select * from products;` could be used to define a query that
+  returns an array of result rows instead of returning an iterator.
+
+* [ ] **Recursive Definitions**—definitions should be allowed to refer to other definitions.
+
+* [ ] **Parameters with Default Values**—not quite sure how to square this with definition overloading, but
+  a definition like `t f( x, y: v ): ...` could rule out a definition `t f( x ): ...` as the former
+  signature already covers the domain of the latter.
+
+* [ ] **Multiple Source Files**—as it stands, IC accepts and requires exactly one definition source file;
+  this should be generalized to accept an entire directory of sources, a list of file paths and so on.
+
+<!-- * [ ] **Meta-Parameters**—as it stands, the definition will be handed to the consumer as-is, and the
+  consumer is responsible for interpolating the named arguments into the definition as seen appropriate. In
+  the case of SQL, this precludes using variables for table and column names, since DB connectors and DB
+  engines will typically not allow to parametrize the structural ('compile-time') parts of queries.
+  InterCourse couldn't really fill that gap as it is intended to remain taerget-language agnostic (so it
+  can't know how to ensure against syntax errors and injection attacks when unsafe strings are handed in),
+  but at least it could prepare the definition strings
+ -->
