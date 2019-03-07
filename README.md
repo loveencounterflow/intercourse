@@ -12,6 +12,21 @@ returns a data structure that describes the definitions it found. It's up to use
 them in JS functions and send the hunks to a database for execution, as does
 [`icql`](https://github.com/loveencounterflow/icql)).
 
+## Usage
+
+You can either parse a string synchronously, or else read file contents synchronously or asynchronously by
+giving a path:
+
+```coffee
+IC = require 'intercourse'
+
+IC.definitions_from_text        text      #  synchronous
+IC.definitions_from_path_sync   path      #  synchronous
+await IC.definitions_from_path  path      # asynchronous
+```
+
+## Format
+
 The format is whitespace-sensitive and super-simple:
 
 * **Each line that does not start with whitespace and is not a top-level comment is considered an IC

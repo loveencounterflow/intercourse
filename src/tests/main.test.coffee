@@ -34,7 +34,7 @@ xrpr2                     = ( x ) -> inspect x, { colors: yes, breakLength: 20, 
   for [ probe, matcher, error, ] in probes_and_matchers
     await T.perform probe, matcher, error, -> return new Promise ( resolve, reject ) ->
       # try
-      result = await IC.read_definitions_from_text probe
+      result = await IC.definitions_from_text probe
       # catch error
       #   return resolve error.message
       # debug '29929', xrpr2 result
@@ -59,7 +59,7 @@ xrpr2                     = ( x ) -> inspect x, { colors: yes, breakLength: 20, 
   for [ probe, matcher, error, ] in probes_and_matchers
     await T.perform probe, matcher, error, -> return new Promise ( resolve, reject ) ->
       # try
-      result = await IC.read_definitions_from_text probe
+      result = await IC.definitions_from_text probe
       # catch error
       #   return resolve error.message
       # debug '29929', xrpr2 result
@@ -84,11 +84,41 @@ xrpr2                     = ( x ) -> inspect x, { colors: yes, breakLength: 20, 
   for [ probe, matcher, error, ] in probes_and_matchers
     await T.perform probe, matcher, error, -> return new Promise ( resolve, reject ) ->
       # try
-      result = await IC.read_definitions_from_text probe
+      result = await IC.definitions_from_text probe
       # catch error
       #   return resolve error
       # debug '29929', xrpr2 result
       resolve result
+  done()
+  return null
+
+#-----------------------------------------------------------------------------------------------------------
+@[ "definitions_from_path_sync" ] = ( T, done ) ->
+  PATH    = require 'path'
+  FS      = require 'fs'
+  path    = PATH.join __dirname, '../../demos/sqlite-demo.icql'
+  probe   = null
+  matcher = IC.definitions_from_text FS.readFileSync path
+  error   = null
+  #.........................................................................................................
+  await T.perform probe, matcher, error, -> return new Promise ( resolve, reject ) ->
+    result = IC.definitions_from_path_sync path
+    resolve result
+  done()
+  return null
+
+#-----------------------------------------------------------------------------------------------------------
+@[ "definitions_from_path" ] = ( T, done ) ->
+  PATH    = require 'path'
+  FS      = require 'fs'
+  path    = PATH.join __dirname, '../../demos/sqlite-demo.icql'
+  probe   = null
+  matcher = IC.definitions_from_text FS.readFileSync path
+  error   = null
+  #.........................................................................................................
+  await T.perform probe, matcher, error, -> return new Promise ( resolve, reject ) ->
+    result = await IC.definitions_from_path path
+    resolve result
   done()
   return null
 
@@ -101,12 +131,11 @@ xrpr2                     = ( x ) -> inspect x, { colors: yes, breakLength: 20, 
   return null
 
 
-
-
-
 ############################################################################################################
 unless module.parent?
   test @
+  # test @[ "definitions_from_path_sync" ]
+  # test @[ "definitions_from_path" ]
   # test @[ "basic 1" ]
   # test @[ "signatures" ]
   # test @[ "oneliners" ]

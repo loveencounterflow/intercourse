@@ -237,12 +237,19 @@ has_full_signatures = ( entry ) ->
     return null
 
 #-----------------------------------------------------------------------------------------------------------
-@read_definitions           = ( path ) -> @_read_definitions PD.read_from_file path
-@read_definitions_from_text = ( text ) -> @_read_definitions PD.new_value_source [ text, ]
+@definitions_from_path = ( path ) ->
+  return new Promise ( resolve, reject ) =>
+    @_read_definitions ( PD.read_from_file path ), ( error, R ) =>
+      return reject error if error?
+      resolve R
 
 #-----------------------------------------------------------------------------------------------------------
-@_read_definitions = ( source ) ->
-  ### TAINT find a way to ensure pipeline is indeed synchronous ###
+@definitions_from_path_sync = ( path ) -> @definitions_from_text ( require 'fs' ).readFileSync path
+@definitions_from_text      = ( text ) -> @_read_definitions PD.new_value_source [ text, ]
+
+#-----------------------------------------------------------------------------------------------------------
+@_read_definitions = ( source, handler ) ->
+  ### TAINT find a way to ensure pipeline after source is indeed synchronous ###
   R         = {}
   S         = { comments: /^--/, }
   pipeline  = []
@@ -256,9 +263,9 @@ has_full_signatures = ( entry ) ->
   pipeline.push @$reorder_trailers      S
   pipeline.push @$compile_definitions   S
   pipeline.push @$collect               S, R
-  pipeline.push PD.$drain()
+  pipeline.push PD.$drain -> if handler? then handler null, R
   PD.pull pipeline...
-  return R
+  return if handler? then null else R
 
 # #-----------------------------------------------------------------------------------------------------------
 # @_read_definitions = ( source ) ->
