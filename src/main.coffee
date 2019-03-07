@@ -214,8 +214,7 @@ has_full_signatures = ( entry ) ->
     #.......................................................................................................
     unless d.value.type is entry.type
       throw new Error """µ94432
-        expected type #{rpr entry.type}, got
-        #{rpr definition.type}
+        #{rpr definition.name} is of type #{rpr entry.type}, unable to change to #{rpr definition.type}
         (line ##{lnr})"""
     #.......................................................................................................
     if entry[ kenning ]?
@@ -238,28 +237,48 @@ has_full_signatures = ( entry ) ->
     return null
 
 #-----------------------------------------------------------------------------------------------------------
-@read_definitions           = ( path ) -> await @_read_definitions PD.read_from_file path
-@read_definitions_from_text = ( text ) -> await @_read_definitions PD.new_value_source [ text, ]
+@read_definitions           = ( path ) -> @_read_definitions PD.read_from_file path
+@read_definitions_from_text = ( text ) -> @_read_definitions PD.new_value_source [ text, ]
 
 #-----------------------------------------------------------------------------------------------------------
 @_read_definitions = ( source ) ->
-  return new Promise ( resolve, reject ) =>
-    R         = {}
-    S         = { comments: /^--/, }
-    pipeline  = []
-    pipeline.push source
-    pipeline.push PD.$split()
-    pipeline.push @$as_line_datoms        S
-    pipeline.push @$skip_comments         S
-    pipeline.push @$add_headers           S
-    pipeline.push @$add_regions           S
-    pipeline.push @$skip_ignored          S
-    pipeline.push @$reorder_trailers      S
-    pipeline.push @$compile_definitions   S
-    pipeline.push @$collect               S, R
-    pipeline.push PD.$drain -> resolve R
-    PD.pull pipeline...
-    return null
+  ### TAINT find a way to ensure pipeline is indeed synchronous ###
+  R         = {}
+  S         = { comments: /^--/, }
+  pipeline  = []
+  pipeline.push source
+  pipeline.push PD.$split()
+  pipeline.push @$as_line_datoms        S
+  pipeline.push @$skip_comments         S
+  pipeline.push @$add_headers           S
+  pipeline.push @$add_regions           S
+  pipeline.push @$skip_ignored          S
+  pipeline.push @$reorder_trailers      S
+  pipeline.push @$compile_definitions   S
+  pipeline.push @$collect               S, R
+  pipeline.push PD.$drain()
+  PD.pull pipeline...
+  return R
+
+# #-----------------------------------------------------------------------------------------------------------
+# @_read_definitions = ( source ) ->
+#   return new Promise ( resolve, reject ) =>
+#     R         = {}
+#     S         = { comments: /^--/, }
+#     pipeline  = []
+#     pipeline.push source
+#     pipeline.push PD.$split()
+#     pipeline.push @$as_line_datoms        S
+#     pipeline.push @$skip_comments         S
+#     pipeline.push @$add_headers           S
+#     pipeline.push @$add_regions           S
+#     pipeline.push @$skip_ignored          S
+#     pipeline.push @$reorder_trailers      S
+#     pipeline.push @$compile_definitions   S
+#     pipeline.push @$collect               S, R
+#     pipeline.push PD.$drain -> resolve R
+#     PD.pull pipeline...
+#     return null
 
 
 
