@@ -22,6 +22,13 @@ PD                        = require 'pipedreams'
 { assign
   jr }                    = CND
 copy                      = ( x ) -> assign {}, x
+#...........................................................................................................
+types                     = require './types'
+{ isa
+  validate
+  declare
+  size_of
+  type_of }               = types
 
 #-----------------------------------------------------------------------------------------------------------
 collapse_text = ( list_of_texts ) ->
