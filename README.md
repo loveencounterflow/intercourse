@@ -128,6 +128,11 @@ The format is whitespace-sensitive and super-simple:
       where x > 0;
   ```
 
+  In case your application can do without partitioning, call InterCourse's `definitions_from_path()`,
+  `definitions_from_path_sync()` or `definitions_from_text()` with a settings object as second argument that
+  sets `{ partition: false, }`; allowed values are `null`, `false` (no partitioning), and `'indent'` (the
+  default).
+
 Here's an example:
 
 ```sql
