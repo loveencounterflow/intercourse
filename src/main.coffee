@@ -257,15 +257,16 @@ partition = ( S, text ) ->
   part  = null
   #.........................................................................................................
   flush = ->
-    return null unless part?
+    return null if ( not part? ) or ( part.length is 0 )
     R.push ( part.join '\n' ).replace /\s+$/, ''
+    part = null
     return null
   #.........................................................................................................
   for line in text.split /\n/
     continue if ( line.match S.comments )?
     if ( line.match /^\S/ )?
       flush()
-      part = []
+    part ?= []
     part.push line
   flush()
   #.........................................................................................................
