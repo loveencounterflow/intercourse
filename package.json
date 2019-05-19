@@ -1,6 +1,6 @@
 {
   "name": "intercourse",
-  "version": "5.0.0",
+  "version": "5.0.1",
   "description": "YeSQL-like utlity to treat files as archives of hunks of functionality descriptions",
   "main": "lib/main.js",
   "directories": {
