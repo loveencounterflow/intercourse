@@ -25,10 +25,10 @@ xrpr2                     = ( x ) -> inspect x, { colors: yes, breakLength: 20, 
 #-----------------------------------------------------------------------------------------------------------
 @[ "basic 1" ] = ( T, done ) ->
   probes_and_matchers = [
-    ["procedure x:\n  foo bar",{"x":{"type":"procedure","null":{"text":"foo bar\n","location":{"line_nr":1},"kenning":"null","type":"procedure"}}},null]
-    ["procedure x:\n  foo bar\n",{"x":{"type":"procedure","null":{"text":"foo bar\n","location":{"line_nr":1},"kenning":"null","type":"procedure"}}},null]
-    ["procedure x:\n  foo bar\n\n",{"x":{"type":"procedure","null":{"text":"foo bar\n","location":{"line_nr":1},"kenning":"null","type":"procedure"}}},null]
-    ["procedure x:\n  foo bar\n\nprocedure y:\n  foo bar\n\n",{"x":{"type":"procedure","null":{"text":"foo bar\n","location":{"line_nr":1},"kenning":"null","type":"procedure"}},"y":{"type":"procedure","null":{"text":"foo bar\n","location":{"line_nr":4},"kenning":"null","type":"procedure"}}},null]
+    ["procedure x:\n  foo bar",{"x":{"type":"procedure","null":{"parts":["foo bar"],"location":{"line_nr":1},"kenning":"null","type":"procedure"}}},null]
+    ["procedure x:\n  foo bar\n",{"x":{"type":"procedure","null":{"parts":["foo bar"],"location":{"line_nr":1},"kenning":"null","type":"procedure"}}},null]
+    ["procedure x:\n  foo bar\n\n",{"x":{"type":"procedure","null":{"parts":["foo bar"],"location":{"line_nr":1},"kenning":"null","type":"procedure"}}},null]
+    ["procedure x:\n  foo bar\n\nprocedure y:\n  foo bar\n\n",{"x":{"type":"procedure","null":{"parts":["foo bar"],"location":{"line_nr":1},"kenning":"null","type":"procedure"}},"y":{"type":"procedure","null":{"parts":["foo bar"],"location":{"line_nr":4},"kenning":"null","type":"procedure"}}},null]
     ]
   #.........................................................................................................
   for [ probe, matcher, error, ] in probes_and_matchers
@@ -45,15 +45,15 @@ xrpr2                     = ( x ) -> inspect x, { colors: yes, breakLength: 20, 
 #-----------------------------------------------------------------------------------------------------------
 @[ "signatures" ] = ( T, done ) ->
   probes_and_matchers = [
-    ["procedure foobar:\n  some text",{"foobar":{"type":"procedure","null":{"text":"some text\n","location":{"line_nr":1},"kenning":"null","type":"procedure"}}},null]
-    ["procedure foobar():\n  some text",{"foobar":{"type":"procedure","()":{"text":"some text\n","location":{"line_nr":1},"kenning":"()","type":"procedure","signature":[]}}},null]
-    ["procedure foobar( first ):\n  some text",{"foobar":{"type":"procedure","(first)":{"text":"some text\n","location":{"line_nr":1},"kenning":"(first)","type":"procedure","signature":["first"]}}},null]
-    ["procedure foobar(first):\n  some text",{"foobar":{"type":"procedure","(first)":{"text":"some text\n","location":{"line_nr":1},"kenning":"(first)","type":"procedure","signature":["first"]}}},null]
-    ["procedure foobar( first, ):\n  some text",{"foobar":{"type":"procedure","(first)":{"text":"some text\n","location":{"line_nr":1},"kenning":"(first)","type":"procedure","signature":["first"]}}},null]
-    ["procedure foobar(first,):\n  some text",{"foobar":{"type":"procedure","(first)":{"text":"some text\n","location":{"line_nr":1},"kenning":"(first)","type":"procedure","signature":["first"]}}},null]
-    ["procedure foobar( first, second ):\n  some text",{"foobar":{"type":"procedure","(first,second)":{"text":"some text\n","location":{"line_nr":1},"kenning":"(first,second)","type":"procedure","signature":["first","second"]}}},null]
-    ["procedure foobar( first, second, ):\n  some text",{"foobar":{"type":"procedure","(first,second)":{"text":"some text\n","location":{"line_nr":1},"kenning":"(first,second)","type":"procedure","signature":["first","second"]}}},null]
-    ["procedure foobar( first, second, ): some text\nprocedure foobar( first ): other text\nprocedure foobar(): blah\n",{"foobar":{"type":"procedure","(first,second)":{"text":"some text\n","location":{"line_nr":1},"kenning":"(first,second)","type":"procedure","signature":["first","second"]},"(first)":{"text":"other text\n","location":{"line_nr":2},"kenning":"(first)","type":"procedure","signature":["first"]},"()":{"text":"blah\n","location":{"line_nr":3},"kenning":"()","type":"procedure","signature":[]}}},null]
+    ["procedure foobar:\n  some text",{"foobar":{"type":"procedure","null":{"parts":["some text"],"location":{"line_nr":1},"kenning":"null","type":"procedure"}}},null]
+    ["procedure foobar():\n  some text",{"foobar":{"type":"procedure","()":{"parts":["some text"],"location":{"line_nr":1},"kenning":"()","type":"procedure","signature":[]}}},null]
+    ["procedure foobar( first ):\n  some text",{"foobar":{"type":"procedure","(first)":{"parts":["some text"],"location":{"line_nr":1},"kenning":"(first)","type":"procedure","signature":["first"]}}},null]
+    ["procedure foobar(first):\n  some text",{"foobar":{"type":"procedure","(first)":{"parts":["some text"],"location":{"line_nr":1},"kenning":"(first)","type":"procedure","signature":["first"]}}},null]
+    ["procedure foobar( first, ):\n  some text",{"foobar":{"type":"procedure","(first)":{"parts":["some text"],"location":{"line_nr":1},"kenning":"(first)","type":"procedure","signature":["first"]}}},null]
+    ["procedure foobar(first,):\n  some text",{"foobar":{"type":"procedure","(first)":{"parts":["some text"],"location":{"line_nr":1},"kenning":"(first)","type":"procedure","signature":["first"]}}},null]
+    ["procedure foobar( first, second ):\n  some text",{"foobar":{"type":"procedure","(first,second)":{"parts":["some text"],"location":{"line_nr":1},"kenning":"(first,second)","type":"procedure","signature":["first","second"]}}},null]
+    ["procedure foobar( first, second, ):\n  some text",{"foobar":{"type":"procedure","(first,second)":{"parts":["some text"],"location":{"line_nr":1},"kenning":"(first,second)","type":"procedure","signature":["first","second"]}}},null]
+    ["procedure foobar( first, second, ): some text\nprocedure foobar( first ): other text\nprocedure foobar(): blah\n",{"foobar":{"type":"procedure","(first,second)":{"parts":["some text"],"location":{"line_nr":1},"kenning":"(first,second)","type":"procedure","signature":["first","second"]},"(first)":{"parts":["other text"],"location":{"line_nr":2},"kenning":"(first)","type":"procedure","signature":["first"]},"()":{"parts":["blah"],"location":{"line_nr":3},"kenning":"()","type":"procedure","signature":[]}}},null]
     ]
   #.........................................................................................................
   for [ probe, matcher, error, ] in probes_and_matchers
@@ -71,14 +71,14 @@ xrpr2                     = ( x ) -> inspect x, { colors: yes, breakLength: 20, 
 @[ "oneliners" ] = ( T, done ) ->
   probes_and_matchers = [
     # ["procedure foobar:  some text\n  illegal line",null,'illegal follow-up after one-liner']
-    ["procedure foobar: some text",{"foobar":{"type":"procedure","null":{"text":"some text\n","location":{"line_nr":1},"kenning":"null","type":"procedure"}}},null]
-    ["procedure foobar(): some text",{"foobar":{"type":"procedure","()":{"text":"some text\n","location":{"line_nr":1},"kenning":"()","type":"procedure","signature":[]}}},null]
-    ["procedure foobar( first ): some text",{"foobar":{"type":"procedure","(first)":{"text":"some text\n","location":{"line_nr":1},"kenning":"(first)","type":"procedure","signature":["first"]}}},null]
-    ["procedure foobar(first): some text",{"foobar":{"type":"procedure","(first)":{"text":"some text\n","location":{"line_nr":1},"kenning":"(first)","type":"procedure","signature":["first"]}}},null]
-    ["procedure foobar( first, ): some text",{"foobar":{"type":"procedure","(first)":{"text":"some text\n","location":{"line_nr":1},"kenning":"(first)","type":"procedure","signature":["first"]}}},null]
-    ["procedure foobar(first,): some text",{"foobar":{"type":"procedure","(first)":{"text":"some text\n","location":{"line_nr":1},"kenning":"(first)","type":"procedure","signature":["first"]}}},null]
-    ["procedure foobar( first, second ): some text",{"foobar":{"type":"procedure","(first,second)":{"text":"some text\n","location":{"line_nr":1},"kenning":"(first,second)","type":"procedure","signature":["first","second"]}}},null]
-    ["procedure foobar( first, second, ): some text",{"foobar":{"type":"procedure","(first,second)":{"text":"some text\n","location":{"line_nr":1},"kenning":"(first,second)","type":"procedure","signature":["first","second"]}}},null]
+    ["procedure foobar: some text",{"foobar":{"type":"procedure","null":{"parts":["some text"],"location":{"line_nr":1},"kenning":"null","type":"procedure"}}},null]
+    ["procedure foobar(): some text",{"foobar":{"type":"procedure","()":{"parts":["some text"],"location":{"line_nr":1},"kenning":"()","type":"procedure","signature":[]}}},null]
+    ["procedure foobar( first ): some text",{"foobar":{"type":"procedure","(first)":{"parts":["some text"],"location":{"line_nr":1},"kenning":"(first)","type":"procedure","signature":["first"]}}},null]
+    ["procedure foobar(first): some text",{"foobar":{"type":"procedure","(first)":{"parts":["some text"],"location":{"line_nr":1},"kenning":"(first)","type":"procedure","signature":["first"]}}},null]
+    ["procedure foobar( first, ): some text",{"foobar":{"type":"procedure","(first)":{"parts":["some text"],"location":{"line_nr":1},"kenning":"(first)","type":"procedure","signature":["first"]}}},null]
+    ["procedure foobar(first,): some text",{"foobar":{"type":"procedure","(first)":{"parts":["some text"],"location":{"line_nr":1},"kenning":"(first)","type":"procedure","signature":["first"]}}},null]
+    ["procedure foobar( first, second ): some text",{"foobar":{"type":"procedure","(first,second)":{"parts":["some text"],"location":{"line_nr":1},"kenning":"(first,second)","type":"procedure","signature":["first","second"]}}},null]
+    ["procedure foobar( first, second, ): some text",{"foobar":{"type":"procedure","(first,second)":{"parts":["some text"],"location":{"line_nr":1},"kenning":"(first,second)","type":"procedure","signature":["first","second"]}}},null]
     ]
   #.........................................................................................................
   for [ probe, matcher, error, ] in probes_and_matchers
