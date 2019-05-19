@@ -102,6 +102,32 @@ The format is whitespace-sensitive and super-simple:
   ...` (exactly as in the call) or `... myfunc( b, a ): ...` (same names but different order) or `...
   myfunc: ...` (a catch-all that precludes any other definitions with explicit signatures).
 
+* Each source text (i.e. the hunk) will be **partitioned** based on its relative indentation with the hunk.
+  This is done so that consumers of SQL have a chance to run each statement separately (because many DB
+  adaptors prohibit executing more than one statement per call). This entails that authors be aware that
+  *each line of source text that starts at the top level will start a new part*. For example, this text:
+
+  ```
+  procedure foo:
+    update mytable
+    set x = 1 where y = 42;
+    select *
+    from mytable
+    where x > 0;
+  ```
+
+  will get split wrongly into five parts, with one line per part. Instead, always write hunks so that each
+  line that does not start a new statement is indented (it also looks better):
+
+  ```
+  procedure foo:
+    update mytable
+      set x = 1 where y = 42;
+    select *
+      from mytable
+      where x > 0;
+  ```
+
 Here's an example:
 
 ```sql
@@ -154,7 +180,10 @@ The above will be turned into a JS object (here shown using YAML / CoffeeScript 
 import_table_texnames:
   type:   'procedure'
   'null':
-    text:         'drop table if exists texnames;\ncreate virtual table texnames using csv( filename='texnames.csv' );\n'
+    parts: [
+      'drop table if exists texnames;'
+      'create virtual table texnames using csv( filename='texnames.csv' );'
+      ]
     kenning:      'null'
     type:         'procedure'
     location:     { line_nr: 4, }
@@ -162,7 +191,10 @@ import_table_texnames:
 create_snippet_table: {
   type:   'procedure'
   '()':
-    text:         'drop table if exists snippets;\ncreate table snippets (\n    id      integer primary key,\n    snippet text not null );\n'
+    parts: [
+      'drop table if exists snippets;'
+      'create table snippets (\n    id      integer primary key,\n    snippet text not null );\n'
+      ]
     kenning:      '()'
     type:         'procedure'
     location:     { line_nr: 10, }
@@ -171,7 +203,9 @@ create_snippet_table: {
 populate_snippets:
   type:   'procedure'
   '()':
-    text:         'insert into snippets ( snippet ) values\n  ( 'iota' ),\n  ( 'Iota' ),\n  ( 'alpha' ),\n  ( 'Alpha' ),\n  ( 'beta' ),\n  ( 'Beta' );\n'
+    parts: [
+      'insert into snippets ( snippet ) values\n  ( 'iota' ),\n  ( 'Iota' ),\n  ( 'alpha' ),\n  ( 'Alpha' ),\n  ( 'beta' ),\n  ( 'Beta' );\n'
+      ]
     kenning:      '()'
     type:         'procedure'
     location:     { line_nr: 17, }
@@ -181,7 +215,9 @@ match_snippet:
   type:   'query'
   '(probe)':
     kenning:      '(probe)'
-    text:         'select id, snippet from snippets where snippet like $probe\n'
+    parts: [
+      'select id, snippet from snippets where snippet like $probe\n'
+      ]
     type:         'query'
     location:     { line_nr: 28, }
     signature:    [ 'probe', ]
@@ -190,25 +226,25 @@ fetch_texnames:
   type:   'query'
   '()':
     kenning:      '()'
-    text:         'select * from texnames;\n'
+    parts:        [ 'select * from texnames;\n', ]
     type:         'query'
     location:     { line_nr: 33, }
     signature:    []
   '(limit)':
     kenning:      '(limit)'
-    text:         'select * from texnames limit $limit;\n'
+    parts:        [ 'select * from texnames limit $limit;\n', ]
     type:         'query'
     location:     { line_nr: 34, }
     signature:    [ 'limit', ]
   '(pattern)':
     kenning:      '(pattern)'
-    text:         'select * from texnames where texname like pattern;\n'
+    parts:        [ 'select * from texnames where texname like pattern;\n', ]
     type:         'query'
     location:     { line_nr: 34, }
     signature:    [ 'pattern', ]
   '(limit,pattern)':
     kenning:      '(limit,pattern)'
-    text:         'select * from texnames where texname like pattern limit $limit;\n'
+    parts:        [ 'select * from texnames where texname like pattern limit $limit;\n', ]
     type:         'query'
     location:     { line_nr: 34, }
     signature:    [ 'limit', 'pattern', ]
