@@ -213,7 +213,7 @@ has_full_signatures = ( entry ) ->
     lnr                 = d.$.line_nr
     definition          = d.value
     { type
-      text
+      parts
       location
       kenning
       signature }       = definition
@@ -238,28 +238,73 @@ has_full_signatures = ( entry ) ->
         #{rpr definition}
         (line ##{lnr})"""
     #.......................................................................................................
-    entry[ kenning ]            = { text, location, kenning, type, }
+    entry[ kenning ]            = { parts, location, kenning, type, }
     entry[ kenning ].signature  = signature if signature?
     #.......................................................................................................
     return null
 
 #-----------------------------------------------------------------------------------------------------------
-@definitions_from_path = ( path ) ->
-  return new Promise ( resolve, reject ) =>
-    @_read_definitions ( PD.read_from_file path ), ( error, R ) =>
-      return reject error if error?
-      resolve R
+@$validate_definition = ( S, collector ) ->
+  return $ ( d, send ) =>
+    validate.datom d
+    validate.true d.key is '^definition'
+    validate.ic_signature_entry d.value
+    send d
 
 #-----------------------------------------------------------------------------------------------------------
-@definitions_from_path_sync = ( path ) -> @definitions_from_text ( require 'fs' ).readFileSync path
-@definitions_from_text      = ( text ) -> @_read_definitions PD.new_value_source [ text, ]
+partition = ( S, text ) ->
+  R     = []
+  part  = null
+  #.........................................................................................................
+  flush = ->
+    return null unless part?
+    R.push ( part.join '\n' ).replace /\s+$/, ''
+    return null
+  #.........................................................................................................
+  for line in text.split /\n/
+    continue if ( line.match S.comments )?
+    if ( line.match /^\S/ )?
+      flush()
+      part = []
+    part.push line
+  flush()
+  #.........................................................................................................
+  return R
 
 #-----------------------------------------------------------------------------------------------------------
-@_read_definitions = ( source, handler ) ->
+@$partition = ( S, collector ) ->
+  return $ ( d, send ) =>
+    # if S.partition is 'indent'
+    definition        = d.value
+    text              = definition.text
+    if S.partition is 'indent'
+      definition.parts  = partition S, text
+    else
+      definition.parts  = [ text, ]
+    delete definition.text
+    send d
+
+#-----------------------------------------------------------------------------------------------------------
+@definitions_from_path = ( path, settings ) -> new Promise ( resolve, reject ) =>
+  @_read_definitions ( PD.read_from_file path ), settings, ( error, R ) =>
+    return reject error if error?
+    resolve R
+
+#-----------------------------------------------------------------------------------------------------------
+@definitions_from_path_sync = ( path, settings ) ->
+  return @definitions_from_text ( ( require 'fs' ).readFileSync path ), settings
+
+#-----------------------------------------------------------------------------------------------------------
+@definitions_from_text = ( text, settings ) ->
+  return @_read_definitions ( PD.new_value_source [ text, ] ), settings
+
+#-----------------------------------------------------------------------------------------------------------
+@_read_definitions = ( source, settings, handler = null ) ->
   ### TAINT find a way to ensure pipeline after source is indeed synchronous ###
   R         = {}
-  S         = { comments: /^--/, }
+  S         = assign { partition: 'indent', comments: /^--/, }
   pipeline  = []
+  validate.ic_settings S
   pipeline.push source
   pipeline.push PD.$split()
   pipeline.push @$as_line_datoms        S
@@ -268,31 +313,15 @@ has_full_signatures = ( entry ) ->
   pipeline.push @$add_regions           S
   pipeline.push @$skip_ignored          S
   pipeline.push @$reorder_trailers      S
+  # pipeline.push PD.$show()
   pipeline.push @$compile_definitions   S
+  pipeline.push @$partition             S
+  pipeline.push @$validate_definition   S
   pipeline.push @$collect               S, R
   pipeline.push PD.$drain -> if handler? then handler null, R
   PD.pull pipeline...
   return if handler? then null else R
 
-# #-----------------------------------------------------------------------------------------------------------
-# @_read_definitions = ( source ) ->
-#   return new Promise ( resolve, reject ) =>
-#     R         = {}
-#     S         = { comments: /^--/, }
-#     pipeline  = []
-#     pipeline.push source
-#     pipeline.push PD.$split()
-#     pipeline.push @$as_line_datoms        S
-#     pipeline.push @$skip_comments         S
-#     pipeline.push @$add_headers           S
-#     pipeline.push @$add_regions           S
-#     pipeline.push @$skip_ignored          S
-#     pipeline.push @$reorder_trailers      S
-#     pipeline.push @$compile_definitions   S
-#     pipeline.push @$collect               S, R
-#     pipeline.push PD.$drain -> resolve R
-#     PD.pull pipeline...
-#     return null
 
 
 
