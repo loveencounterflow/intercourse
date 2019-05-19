@@ -32,10 +32,26 @@ query match_snippet( probe ):
 -- one-liners and overloading are possible, too:
 query fetch_texnames():                   select * from texnames;
 query fetch_texnames( limit ):            select * from texnames limit $limit;
-query fetch_texnames( pattern ):          select * from texnames where texname like pattern;
-query fetch_texnames( pattern, limit ):   select * from texnames where texname like pattern limit $limit;
+query fetch_texnames( pattern ):          select * from texnames where texname like $pattern;
+query fetch_texnames( pattern, limit ):   select * from texnames where texname like $pattern limit $limit;
 
 -- ---------------------------------------------------------------------------------------------------------
 -- everything under an `ignore` heading will be ignored (duh):
 ignore:
   This text will be ignored
+
+-- -- ---------------------------------------------------------------------------------------------------------
+-- -- a `fragments` construct may contain fragments (that may or may not be valid per se in the target
+-- -- language):
+-- fragments create_and_populate_foo:
+--   first:
+--     drop table if exists foo;
+--     create table foo ( value text );
+--     insert into foo values
+--   mid( comma, value ):
+--     $comma ( $value )
+--   last:
+--     ;
+--     create index idx_on_foo_value on foo ( value );
+
+
