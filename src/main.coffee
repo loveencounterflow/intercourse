@@ -15,10 +15,12 @@ whisper                   = CND.get_logger 'whisper',   badge
 echo                      = CND.echo.bind CND
 #...........................................................................................................
 PATH                      = require 'path'
-PD                        = require 'pipedreams'
+# PD                        = require 'pipedreams'
+PD                        = ( require 'pipedreams' ).create_nofreeze()
 { $
   $async
-  select }                = PD
+  select
+  lets }                  = PD
 { assign
   jr }                    = CND
 copy                      = ( x ) -> assign {}, x
@@ -50,8 +52,8 @@ has_full_signatures = ( entry ) ->
   line_nr = 0
   return $ ( line, send ) ->
     line_nr += +1
-    d           = PD.new_event '^line', line, $: { line_nr, }
-    d.is_blank  = true if ( d.value.match /^\s*$/ )?
+    if ( line.match /^\s*$/ )?  then  d = PD.new_datom '^line', { value: line, $: { line_nr, }, ref: 'ald/1', is_blank: true, }
+    else                              d = PD.new_datom '^line', { value: line, $: { line_nr, }, ref: 'ald/2', }
     send d
     return null
 
@@ -66,9 +68,9 @@ has_full_signatures = ( entry ) ->
   return $ ( d, send ) =>
     return send d if d.is_blank
     return send d if ( d.value.match /^\s/ )?
-    return send PD.new_event '^ignore',     ( copy m.groups ), $: d if ( m = d.value.match ignore_re       )?
-    return send PD.new_event '^definition', ( copy m.groups ), $: d if ( m = d.value.match header_sig_re   )?
-    return send PD.new_event '^definition', ( copy m.groups ), $: d if ( m = d.value.match header_plain_re )?
+    return ( send PD.new_datom '^ignore',     { value: ( copy m.groups ), $: d, ref: 'ah/1', } ) if ( m = d.value.match ignore_re       )?
+    return ( send PD.new_datom '^definition', { value: ( copy m.groups ), $: d, ref: 'ah/2', } ) if ( m = d.value.match header_sig_re   )?
+    return ( send PD.new_datom '^definition', { value: ( copy m.groups ), $: d, ref: 'ah/3', } ) if ( m = d.value.match header_plain_re )?
     #.......................................................................................................
     throw new Error "µ83473 illegal line #{rpr d}"
     return null
@@ -83,7 +85,7 @@ has_full_signatures = ( entry ) ->
     #.......................................................................................................
     if d is last
       if prv_name?
-        send PD.new_event '>' + prv_name
+        send PD.new_datom ( '>' + prv_name ), { ref: 'ar/1', }
         prv_name = null
       return
     #.......................................................................................................
@@ -93,15 +95,14 @@ has_full_signatures = ( entry ) ->
       throw new Error "µ85818 found line outside of any region: #{rpr d}"
     #.......................................................................................................
     if prv_name?
-      send PD.new_event '>' + prv_name
+      send PD.new_datom ( '>' + prv_name ), { ref: 'ar/2', }
       within_region = false
       prv_name      = null
     #.......................................................................................................
     unless within_region
       ### TAINT use PipeDreams API for this ###
-      d             = CND.deep_copy d
       prv_name      = d.key[ 1 .. ]
-      d.key         = '<' + prv_name
+      d             = lets d, ( d ) -> d.key = ( '<' + prv_name ); d.ref = 'ar/3'
       within_region = true
       send d
     #.......................................................................................................
@@ -126,11 +127,11 @@ has_full_signatures = ( entry ) ->
     if select d, '<definition'
       within_definition = true
       trailer           = d.value.trailer
-      delete d.value.trailer
+      d                 = lets d, ( d ) -> delete d.value.trailer
       if trailer? and ( trailer.length > 0 )
         is_oneliner = true
         send d
-        send PD.new_event '^line', '  ' + trailer.trim(), $: d
+        send PD.new_datom '^line', { value: ( '  ' + trailer.trim() ), $: d, ref: 'rt/1', }
       else
         send d
     #.......................................................................................................
@@ -179,7 +180,7 @@ has_full_signatures = ( entry ) ->
     #.......................................................................................................
     else if select d, '>definition'
       this_definition.text  = collapse_text this_definition.text
-      send PD.new_event '^definition', this_definition, $: this_definition.location
+      send PD.new_datom '^definition', { value: this_definition, $: this_definition.location, ref: 'cd/1', }
       this_definition       = null
       this_indentation      = null
     #.......................................................................................................
@@ -232,7 +233,7 @@ has_full_signatures = ( entry ) ->
     #.......................................................................................................
     ### TAINT must re-implement ###
     if ( kenning is 'null' ) and ( has_full_signatures entry )
-      debug entry
+      debug 'µ23983', entry
       throw new Error """µ23983
         can't overload explicit-signature definition with a null-signature definition:
         #{rpr definition}
@@ -276,14 +277,15 @@ partition = ( S, text ) ->
 @$partition = ( S, collector ) ->
   return $ ( d, send ) =>
     # if S.partition is 'indent'
-    definition        = d.value
-    text              = definition.text
-    if S.partition is 'indent'
-      definition.parts  = partition S, text
-    else
-      definition.parts  = [ text, ]
-    delete definition.text
-    send d
+    send lets d, ( d ) ->
+      definition        = d.value
+      text              = definition.text
+      if S.partition is 'indent'
+        definition.parts  = partition S, text
+      else
+        definition.parts  = [ text, ]
+      delete definition.text
+    return null
 
 #-----------------------------------------------------------------------------------------------------------
 @definitions_from_path = ( path, settings ) -> new Promise ( resolve, reject ) =>
