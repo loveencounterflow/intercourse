@@ -13,9 +13,9 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "cnd": "^4.5.0",
-    "intertype": "^2.3.0",
-    "pipedreams": "^7.6.1"
+    "cnd": "^4.6.0",
+    "intertype": "^2.5.0",
+    "pipedreams": "^11.1.2"
   },
   "devDependencies": {
     "guy-test": "^1.4.0"
