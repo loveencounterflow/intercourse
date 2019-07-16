@@ -20,7 +20,7 @@ PD                        = ( require 'pipedreams' ).create_nofreeze()
 { $
   $async
   select
-  lets }                  = PD
+  lets }                  = PD.export()
 { assign
   jr }                    = CND
 copy                      = ( x ) -> assign {}, x
