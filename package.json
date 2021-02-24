@@ -14,8 +14,9 @@
   "license": "ISC",
   "dependencies": {
     "cnd": "9.2.1",
+    "datom": "8.0.2",
     "intertype": "7.6.3",
-    "pipedreams": "12.1.1"
+    "steampipes": "^6.7.0"
   },
   "devDependencies": {
     "guy-test": "4.0.1"
