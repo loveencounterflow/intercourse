@@ -68,7 +68,7 @@ kenning_pattern = /// ^ null | \( \S* \)  $ ///
     "? is an object":                         ( x ) -> @isa.object    x
     # "? has key 'key'":                        ( x ) -> @has_key x, 'key'
     # "? has key 'value'":                      ( x ) -> @has_key x, 'value'
-    "?.key is a nonempty text":               ( x ) -> @isa.nonempty_text x.key
+    "?.$key is a nonempty text":              ( x ) -> @isa.nonempty_text x.$key
 
 
 

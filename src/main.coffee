@@ -15,12 +15,13 @@ whisper                   = CND.get_logger 'whisper',   badge
 echo                      = CND.echo.bind CND
 #...........................................................................................................
 PATH                      = require 'path'
-# PD                        = require 'pipedreams'
-PD                        = ( require 'pipedreams' ).create_nofreeze()
+SP                        = require 'steampipes'
 { $
-  $async
+  $async }                  = SP.export()
+DATOM                     = require 'datom'
+{ new_datom
   select
-  lets }                  = PD.export()
+  lets      }             = DATOM.export()
 { assign
   jr }                    = CND
 copy                      = ( x ) -> assign {}, x
@@ -52,13 +53,13 @@ has_full_signatures = ( entry ) ->
   line_nr = 0
   return $ ( line, send ) ->
     line_nr += +1
-    if ( line.match /^\s*$/ )?  then  d = PD.new_datom '^line', { value: line, $: { line_nr, }, ref: 'ald/1', is_blank: true, }
-    else                              d = PD.new_datom '^line', { value: line, $: { line_nr, }, ref: 'ald/2', }
+    if ( line.match /^\s*$/ )?  then  d = new_datom '^line', { value: line, $: { line_nr, }, ref: 'ald/1', is_blank: true, }
+    else                              d = new_datom '^line', { value: line, $: { line_nr, }, ref: 'ald/2', }
     send d
     return null
 
 #-----------------------------------------------------------------------------------------------------------
-@$skip_comments = ( S ) -> PD.$filter ( d ) -> not ( d.value.match S.comments )?
+@$skip_comments = ( S ) -> SP.$filter ( d ) -> not ( d.value.match S.comments )?
 
 #-----------------------------------------------------------------------------------------------------------
 @$add_headers = ( S ) ->
@@ -68,9 +69,9 @@ has_full_signatures = ( entry ) ->
   return $ ( d, send ) =>
     return send d if d.is_blank
     return send d if ( d.value.match /^\s/ )?
-    return ( send PD.new_datom '^ignore',     { value: ( copy m.groups ), $: d, ref: 'ah/1', } ) if ( m = d.value.match ignore_re       )?
-    return ( send PD.new_datom '^definition', { value: ( copy m.groups ), $: d, ref: 'ah/2', } ) if ( m = d.value.match header_sig_re   )?
-    return ( send PD.new_datom '^definition', { value: ( copy m.groups ), $: d, ref: 'ah/3', } ) if ( m = d.value.match header_plain_re )?
+    return ( send new_datom '^ignore',     { value: ( copy m.groups ), $: d, ref: 'ah/1', } ) if ( m = d.value.match ignore_re       )?
+    return ( send new_datom '^definition', { value: ( copy m.groups ), $: d, ref: 'ah/2', } ) if ( m = d.value.match header_sig_re   )?
+    return ( send new_datom '^definition', { value: ( copy m.groups ), $: d, ref: 'ah/3', } ) if ( m = d.value.match header_plain_re )?
     #.......................................................................................................
     throw new Error "µ83473 illegal line #{rpr d}"
     return null
@@ -85,7 +86,7 @@ has_full_signatures = ( entry ) ->
     #.......................................................................................................
     if d is last
       if prv_name?
-        send PD.new_datom ( '>' + prv_name ), { ref: 'ar/1', }
+        send new_datom ( '>' + prv_name ), { ref: 'ar/1', }
         prv_name = null
       return
     #.......................................................................................................
@@ -95,14 +96,14 @@ has_full_signatures = ( entry ) ->
       throw new Error "µ85818 found line outside of any region: #{rpr d}"
     #.......................................................................................................
     if prv_name?
-      send PD.new_datom ( '>' + prv_name ), { ref: 'ar/2', }
+      send new_datom ( '>' + prv_name ), { ref: 'ar/2', }
       within_region = false
       prv_name      = null
     #.......................................................................................................
     unless within_region
       ### TAINT use PipeDreams API for this ###
-      prv_name      = d.key[ 1 .. ]
-      d             = lets d, ( d ) -> d.key = ( '<' + prv_name ); d.ref = 'ar/3'
+      prv_name      = d.$key[ 1 .. ]
+      d             = lets d, ( d ) -> d.$key = ( '<' + prv_name ); d.ref = 'ar/3'
       within_region = true
       send d
     #.......................................................................................................
@@ -131,7 +132,7 @@ has_full_signatures = ( entry ) ->
       if trailer? and ( trailer.length > 0 )
         is_oneliner = true
         send d
-        send PD.new_datom '^line', { value: ( '  ' + trailer.trim() ), $: d, ref: 'rt/1', }
+        send new_datom '^line', { value: ( '  ' + trailer.trim() ), $: d, ref: 'rt/1', }
       else
         send d
     #.......................................................................................................
@@ -180,7 +181,7 @@ has_full_signatures = ( entry ) ->
     #.......................................................................................................
     else if select d, '>definition'
       this_definition.text  = collapse_text this_definition.text
-      send PD.new_datom '^definition', { value: this_definition, $: this_definition.location, ref: 'cd/1', }
+      send new_datom '^definition', { value: this_definition, $: this_definition.location, ref: 'cd/1', }
       this_definition       = null
       this_indentation      = null
     #.......................................................................................................
@@ -248,7 +249,7 @@ has_full_signatures = ( entry ) ->
 @$validate_definition = ( S, collector ) ->
   return $ ( d, send ) =>
     validate.datom d
-    validate.true d.key is '^definition'
+    validate.true d.$key is '^definition'
     validate.ic_signature_entry d.value
     send d
 
@@ -289,7 +290,7 @@ partition = ( S, text ) ->
 
 #-----------------------------------------------------------------------------------------------------------
 @definitions_from_path = ( path, settings ) -> new Promise ( resolve, reject ) =>
-  @_read_definitions ( PD.read_from_file path ), settings, ( error, R ) =>
+  @_read_definitions ( SP.read_from_file path ), settings, ( error, R ) =>
     return reject error if error?
     resolve R
 
@@ -299,7 +300,8 @@ partition = ( S, text ) ->
 
 #-----------------------------------------------------------------------------------------------------------
 @definitions_from_text = ( text, settings ) ->
-  return @_read_definitions ( PD.new_value_source [ text, ] ), settings
+  buffer = Buffer.from text, { encoding: 'utf-8', }
+  return @_read_definitions ( SP.new_value_source [ buffer, ] ), settings
 
 #-----------------------------------------------------------------------------------------------------------
 @_read_definitions = ( source, settings, handler = null ) ->
@@ -309,20 +311,20 @@ partition = ( S, text ) ->
   pipeline  = []
   validate.ic_settings S
   pipeline.push source
-  pipeline.push PD.$split()
+  pipeline.push SP.$split()
   pipeline.push @$as_line_datoms        S
   pipeline.push @$skip_comments         S
   pipeline.push @$add_headers           S
   pipeline.push @$add_regions           S
   pipeline.push @$skip_ignored          S
   pipeline.push @$reorder_trailers      S
-  # pipeline.push PD.$show()
+  # pipeline.push SP.$show()
   pipeline.push @$compile_definitions   S
   pipeline.push @$partition             S
   pipeline.push @$validate_definition   S
   pipeline.push @$collect               S, R
-  pipeline.push PD.$drain -> if handler? then handler null, R
-  PD.pull pipeline...
+  pipeline.push SP.$drain -> if handler? then handler null, R
+  SP.pull pipeline...
   return if handler? then null else R
 
 
